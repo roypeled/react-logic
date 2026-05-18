@@ -1,4 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+
+// Hash a string (React's useId output) into a stable 32-bit integer.
+// FNV-1a — fast, no deps, decent distribution for our needs.
+const hashStringToInt = (s: string): number => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+};
 
 const usePrefersReducedMotion = (): boolean => {
   const [reduced, setReduced] = useState(false);
@@ -846,16 +857,21 @@ export const GrungeCanvas = ({
   const animate = animateProp && !prefersReducedMotion;
   const animateDrift = animate && !isSafari;
 
+  // `useId` is stable across server and client, unlike `Math.random()`.
+  // Hash it into the integer seed the scene generator expects. Hydration-safe.
+  const reactId = useId();
+  const idSeed = useMemo(() => hashStringToInt(reactId), [reactId]);
+
   // Stabilize seed and palette once per mount. Avoids re-creating WebGL state
   // when the parent re-renders.
   const stableSeed = useMemo(
-    () => seed ?? Math.floor(Math.random() * 1e9),
+    () => seed ?? idSeed,
     // Intentionally only on mount — parent re-renders shouldn't churn the
     // scene. Pass a different React key to reset.
     []
   );
   const stablePalette = useMemo(
-    () => palette ?? PALETTE_KEYS[Math.floor(Math.random() * PALETTE_KEYS.length)],
+    () => palette ?? PALETTE_KEYS[idSeed % PALETTE_KEYS.length],
     []
   );
 
