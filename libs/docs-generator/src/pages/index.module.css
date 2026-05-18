@@ -227,6 +227,10 @@
     align-self: flex-start;
     width: 100%;
   }
+
+  .demoList {
+    min-height: 20vh !important;
+  }
 }
 
 .snippet {
