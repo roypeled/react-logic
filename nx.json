@@ -16,9 +16,7 @@
     {
       "plugin": "@nx/js/typescript",
       "options": {
-        "typecheck": {
-          "targetName": "typecheck"
-        },
+        "typecheck": { "targetName": "typecheck" },
         "build": {
           "targetName": "build",
           "configName": "tsconfig.lib.json",
@@ -27,12 +25,7 @@
         }
       }
     },
-    {
-      "plugin": "@nx/eslint/plugin",
-      "options": {
-        "targetName": "lint"
-      }
-    },
+    { "plugin": "@nx/eslint/plugin", "options": { "targetName": "lint" } },
     {
       "plugin": "@nx/vite/plugin",
       "options": {
@@ -48,11 +41,7 @@
       }
     }
   ],
-  "targetDefaults": {
-    "test": {
-      "dependsOn": ["^build"]
-    }
-  },
+  "targetDefaults": { "test": { "dependsOn": ["^build"] } },
   "release": {
     "projects": [
       "@react-logic/core",
@@ -67,11 +56,7 @@
       "preVersionCommand": "npx nx run-many -t build",
       "conventionalCommits": true
     },
-    "changelog": {
-      "workspaceChangelog": {
-        "createRelease": "github"
-      }
-    }
+    "changelog": { "workspaceChangelog": { "createRelease": "github" } }
   },
   "generators": {
     "@nx/react": {
@@ -81,14 +66,13 @@
         "linter": "eslint",
         "bundler": "vite"
       },
-      "component": {
-        "style": "css"
-      },
+      "component": { "style": "css" },
       "library": {
         "style": "css",
         "linter": "eslint",
         "unitTestRunner": "vitest"
       }
     }
-  }
+  },
+  "nxCloudId": "6a0b392518eacc2aecdddaeb"
 }
