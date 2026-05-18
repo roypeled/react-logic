@@ -7,8 +7,8 @@ const config: Config = {
   tagline: 'Class-based logic + DI for React',
   favicon: 'img/logo.svg',
 
-  url: process.env.DOCS_SITE_URL || 'http://localhost:3000',
-  baseUrl: process.env.DOCS_BASE_URL || '/',
+  url: process.env.DOCS_SITE_URL?.trim() || 'http://localhost:3000',
+  baseUrl: process.env.DOCS_BASE_URL?.trim() || '/',
   trailingSlash: false,
 
   organizationName: 'roypeled',
