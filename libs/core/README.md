@@ -2,7 +2,7 @@
 
 `useLogic` — bind a plain logic class to a React component, with automatic re-renders driven by signals.
 
-Part of [react-logic](https://github.com/roy-peled_sfrt/react-logic). For the full toolkit in one install, use [`@react-logic/react-logic`](https://npmjs.com/package/@react-logic/react-logic).
+Part of [react-logic](https://github.com/roypeled/react-logic). For the full toolkit in one install, use [`@react-logic/react-logic`](https://npmjs.com/package/@react-logic/react-logic).
 
 ## Install
 
@@ -39,7 +39,7 @@ export function Counter() {
 import { createTestInjectionScope, flushAsyncSignals } from '@react-logic/core/testing';
 ```
 
-See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for full docs and demos.
+See the [project README](https://github.com/roypeled/react-logic#readme) for full docs and demos.
 
 ## License
 

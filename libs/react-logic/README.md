@@ -1,6 +1,6 @@
 # @react-logic/react-logic
 
-Umbrella package for [react-logic](https://github.com/roy-peled_sfrt/react-logic) — a tiny React toolkit that separates render from logic using signals and DI.
+Umbrella package for [react-logic](https://github.com/roypeled/react-logic) — a tiny React toolkit that separates render from logic using signals and DI.
 
 Re-exports the three required packages from a single entry point: [`@react-logic/core`](https://npmjs.com/package/@react-logic/core), [`@react-logic/state`](https://npmjs.com/package/@react-logic/state), [`@react-logic/di`](https://npmjs.com/package/@react-logic/di). Optional packages (`@react-logic/utils`, `@react-logic/angular-adapter`) are kept separate.
 
@@ -38,7 +38,7 @@ export function Counter() {
 - Read signals with `s()`, write with `s(next)`.
 - `useLogic(LogicClass)` returns a per-component instance and re-renders the component when signals it read change.
 
-See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for the full API surface, runnable demos, and DI examples.
+See the [project README](https://github.com/roypeled/react-logic#readme) for the full API surface, runnable demos, and DI examples.
 
 ## License
 

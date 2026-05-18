@@ -2,6 +2,13 @@
   "name": "@react-logic/react-logic",
   "version": "0.1.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roypeled/react-logic.git",
+    "directory": "libs/react-logic"
+  },
+  "homepage": "https://github.com/roypeled/react-logic#readme",
+  "bugs": "https://github.com/roypeled/react-logic/issues",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

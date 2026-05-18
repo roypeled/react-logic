@@ -6,7 +6,7 @@ Optional helpers built on top of [`@react-logic/state`](https://npmjs.com/packag
 - `fetchState` + verb presets (`postFetchState`, `putFetchState`, `deleteFetchState`) — reactive HTTP with built-in abort, status, and pluggable transport.
 - `formState` / `formGroup` / `useForm` — schema-driven forms with typed `bind` / `error` proxies and HTML-attr-aware validators.
 
-Part of [react-logic](https://github.com/roy-peled_sfrt/react-logic).
+Part of [react-logic](https://github.com/roypeled/react-logic).
 
 ## Install
 
@@ -53,7 +53,7 @@ export function LoginForm() {
 }
 ```
 
-See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for full docs and demos.
+See the [project README](https://github.com/roypeled/react-logic#readme) for full docs and demos.
 
 ## License
 

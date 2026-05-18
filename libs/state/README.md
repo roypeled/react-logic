@@ -2,7 +2,7 @@
 
 Signal primitives: `state`, `computedState`, `effect`, `batch`.
 
-Part of [react-logic](https://github.com/roy-peled_sfrt/react-logic). For the full toolkit in one install, use [`@react-logic/react-logic`](https://npmjs.com/package/@react-logic/react-logic).
+Part of [react-logic](https://github.com/roypeled/react-logic). For the full toolkit in one install, use [`@react-logic/react-logic`](https://npmjs.com/package/@react-logic/react-logic).
 
 ## Install
 
@@ -34,7 +34,7 @@ batch(() => {
 - `computedState` accepts an optional input arg variant for derived signals parameterized at call time.
 - `effect` returns a disposer; cleanup is auto-tracked inside `useLogic` and injection scopes.
 
-See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for full docs and demos.
+See the [project README](https://github.com/roypeled/react-logic#readme) for full docs and demos.
 
 ## License
 

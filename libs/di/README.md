@@ -2,7 +2,7 @@
 
 Lightweight dependency injection for React — `Injector`, `inject`, `InjectionToken`, `onDestroy`.
 
-Part of [react-logic](https://github.com/roy-peled_sfrt/react-logic). For the full toolkit in one install, use [`@react-logic/react-logic`](https://npmjs.com/package/@react-logic/react-logic).
+Part of [react-logic](https://github.com/roypeled/react-logic). For the full toolkit in one install, use [`@react-logic/react-logic`](https://npmjs.com/package/@react-logic/react-logic).
 
 ## Install
 
@@ -39,7 +39,7 @@ export function App() {
 - Override with `{ provide: Token, useClass: ... }` / `useValue` / `useFactory`.
 - `onDestroy(fn)` registers cleanup tied to the surrounding `Injector` (or logic instance).
 
-See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for full docs and demos.
+See the [project README](https://github.com/roypeled/react-logic#readme) for full docs and demos.
 
 ## License
 

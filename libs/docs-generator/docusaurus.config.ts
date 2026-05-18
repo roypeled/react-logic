@@ -11,7 +11,7 @@ const config: Config = {
   baseUrl: process.env.DOCS_BASE_URL ?? '/',
   trailingSlash: false,
 
-  organizationName: 'react-logic',
+  organizationName: 'roypeled',
   projectName: 'react-logic',
 
   onBrokenLinks: 'warn',
@@ -93,7 +93,8 @@ const config: Config = {
   // Single source of truth for repo links. The `<SourceLink>` component
   // reads this via `useDocusaurusContext().siteConfig.customFields.repoUrl`.
   customFields: {
-    repoUrl: 'https://github.com/your-org/react-logic',
+    repoUrl: 'https://github.com/roypeled/react-logic',
+    npmUrl: 'https://www.npmjs.com/package/@react-logic/react-logic',
   },
 
   themeConfig: {
@@ -102,7 +103,8 @@ const config: Config = {
       logo: { alt: 'react-logic', src: 'img/logo.svg' },
       items: [
         { type: 'docSidebar', sidebarId: 'mainSidebar', position: 'left', label: 'Docs' },
-        { href: 'https://github.com/', label: 'GitHub', position: 'right' },
+        { href: 'https://www.npmjs.com/package/@react-logic/react-logic', label: 'npm', position: 'right' },
+        { href: 'https://github.com/roypeled/react-logic', label: 'GitHub', position: 'right' },
       ],
     },
     prism: {

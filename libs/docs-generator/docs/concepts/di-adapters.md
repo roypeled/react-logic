@@ -65,7 +65,7 @@ Any DI runtime that supports a scope tree, parent delegation, cached instances, 
 3. For `construct`, create a short-lived destroy context. It needs to track user-level `onDestroy` calls separately from service-internal ones, and to track every value `inject()` returns.
 4. Pass the assembled object to `setDIAdapter`.
 
-See [angular-adapter.ts](https://github.com/react-logic/react-logic/blob/main/libs/angular-adapter/src/lib/angular-adapter.ts) for a working ~70-line reference implementation.
+See [angular-adapter.ts](https://github.com/roypeled/react-logic/blob/main/libs/angular-adapter/src/lib/angular-adapter.ts) for a working ~70-line reference implementation.
 
 ## Why an adapter at all?
 

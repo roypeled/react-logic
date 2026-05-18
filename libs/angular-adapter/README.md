@@ -2,7 +2,7 @@
 
 Use [`@react-logic/di`](https://npmjs.com/package/@react-logic/di) backed by Angular's `EnvironmentInjector`. Lets a React app share DI with an Angular host (hybrid app, micro-frontend) — or run on Angular DI alone.
 
-Part of [react-logic](https://github.com/roy-peled_sfrt/react-logic).
+Part of [react-logic](https://github.com/roypeled/react-logic).
 
 ## Install
 
@@ -26,7 +26,7 @@ setDIAdapter(createAngularAdapter(root));
 
 Once installed, all `inject(...)`, `Injector` scopes, and `onDestroy` calls from `@react-logic/di` route through Angular's DI graph. Providers registered in the Angular host become resolvable from React logic classes and vice versa.
 
-See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for full docs.
+See the [project README](https://github.com/roypeled/react-logic#readme) for full docs.
 
 ## License
 
