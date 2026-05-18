@@ -228,6 +228,14 @@
     width: 100%;
   }
 
+  .codeBlockContainer {
+    mask-border-width: 20px 0 0 0 !important;
+  }
+
+  .demo {
+    mask-border-width: 0 !important;
+  }
+
   .demoList {
     min-height: 20vh !important;
   }
