@@ -263,7 +263,7 @@ export default function Home() {
           </Link>
           <Link
             className="button button--secondary button--lg reverse" {...randomAmount()}
-            href="https://github.com/"
+            href="https://github.com/roypeled/react-logic"
           >
             GitHub
           </Link>
