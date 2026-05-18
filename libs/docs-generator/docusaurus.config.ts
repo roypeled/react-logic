@@ -115,6 +115,10 @@ const config: Config = {
   },
 
   themeConfig: {
+    colorMode: {
+      defaultMode: 'dark',
+      respectPrefersColorScheme: false,
+    },
     navbar: {
       title: 'react-logic',
       logo: { alt: 'react-logic', src: 'img/logo.svg' },
