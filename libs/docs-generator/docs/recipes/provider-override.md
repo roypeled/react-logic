@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Provider override for a sub-tree
 
-Nested `<Injector>` replaces a token for its children only. Per-route theming, feature flags, environment swaps.
+A nested `<Injector>` replaces a token for its children only. Per-route theming, feature flags, environment swaps.
 
 ```tsx
 <Injector provide={[{ provide: Theme, useValue: 'light' }]}>
@@ -64,10 +64,10 @@ const StoryWrapper = ({ children }) => (
 ))}
 ```
 
-Each `<Panel>` gets its own `PanelStore`, disposed when its row is removed.
+Each `<Panel>` gets its own `PanelStore`. It's disposed when the row is removed.
 
 ## See also
 
 - [Sharing services scoped to a tree](./scoped-services.md)
 - [Dependency injection guide](/docs/guides/dependency-injection)
-- [Testing guide](/docs/guides/testing) — provider override as test seam.
+- [Testing guide](/docs/guides/testing) — provider override as the test boundary.

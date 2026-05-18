@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Forms
 
-Reactive forms backed by a logic class. `formState` defines the schema; `useForm` binds it to a React component with a typed `bind` proxy. Validators are named and per-field, with HTML attributes that ride along into the rendered inputs. Lives in `@react-logic/utils`.
+Reactive forms backed by a logic class. `formState` defines the schema. `useForm` binds it to a React component with a typed `bind` proxy. Validators are named and per-field, and they can carry HTML attributes that get applied to the rendered inputs. Lives in `@react-logic/utils`.
 
 ```sh
 npm install @react-logic/utils
@@ -38,7 +38,7 @@ class SignupLogic {
   });
 
   submit(values: FormValues<typeof this.form>) {
-    // typed values — `values.email`, `values.address.zip`, etc.
+    // typed values: `values.email`, `values.address.zip`, etc.
   }
 }
 
@@ -66,26 +66,76 @@ const Signup = () => {
 };
 ```
 
+## How it fits together
+
+Forms have three moving parts. Once you've seen them once, the rest of the guide is just filling in details.
+
+**1. Define the form on your logic class.** Call `formState({...})` and assign it to a field. Each key is a field; pass any validators and options inline.
+
+```ts
+class SignupLogic {
+  form = formState({
+    email: { validators: [required(), email()] },
+  });
+}
+```
+
+**2. Bind it in the component.** `useForm(logic.form)` returns a `<Form>` component. Render the inputs through `Form.inputs.<field>` (the easiest path) or spread `Form.bind.<field>` onto your own elements.
+
+```tsx
+const Signup = () => {
+  const logic = useLogic(SignupLogic);
+  const Form = useForm(logic.form);
+  return (
+    <Form onSubmit={(values) => console.log(values)}>
+      <Form.inputs.email />
+      <button type="submit">Sign up</button>
+    </Form>
+  );
+};
+```
+
+**3. Read the form when you need its state.** `logic.form` is a signal — calling it (`logic.form()`) returns the current snapshot, and the component subscribes to changes the same way it does for any other signal. Writes happen automatically through the `<Form>` bindings; you only read.
+
+The snapshot is `{ values, errors, touched, dirty, valid, pristine, submitting, submitted }`. `values` is the typed value tree — read it directly to get the current field values:
+
+```ts
+const snap = logic.form();
+
+snap.values.email;            // string — the current email input
+snap.values.age;              // number, if you set `parse: Number`
+snap.values.address.city;     // nested groups follow the schema shape
+```
+
+Use the other fields for UI flags — disable the submit button on `!snap.valid`, render an error when a field is touched and failing, branch on `submitting` / `submitted`:
+
+```tsx
+<button type="submit" disabled={!snap.valid}>Sign up</button>
+{snap.touched.email && snap.errors.email.required && <p>Email is required</p>}
+```
+
+That's the loop: define on the logic class, bind in the component, read the snapshot. The rest of the guide is the details — what goes inside the schema, what validators ship with the library, and what the bind/error/inputs proxies expose.
+
 ## Schema
 
-Each key in the schema is either a **field config** or a **group** (marked with `formGroup`). The shape recurses arbitrarily.
+Each key in the schema is either a **field config** or a **group** (marked with `formGroup`). The shape nests as deep as you want.
 
 ```ts
 type FieldConfig<T> = {
   initial?:    T;                                  // default depends on kind
   kind?:       'text' | 'checkbox' | 'select' | 'radio';
-  parse?:      (raw: string) => T;                 // raw-input → typed value
+  parse?:      (raw: string) => T;                 // raw input → typed value
   validators?: ValidatorEntry<T>[];
 };
 ```
 
-Every property is optional. Empty `{}` is a `text` field with `''` initial. `kind: 'checkbox'` defaults `initial` to `false`. Explicit `initial` always wins and narrows further:
+Every property is optional. Empty `{}` is a `text` field with `''` as the initial value. `kind: 'checkbox'` defaults `initial` to `false`. Explicit `initial` always wins and narrows further:
 
 ```ts
 country: { initial: 'US' as 'US' | 'UK', kind: 'select' }
 ```
 
-`parse` runs on every raw-input write; without it, the field's typed value is the raw string. For number inputs:
+`parse` runs on every raw-input write. Without it, the field's typed value is the raw string. For number inputs:
 
 ```ts
 age: { initial: 0, parse: Number, validators: [min(18), max(120), integer()] }
@@ -103,32 +153,32 @@ formState({
 });
 ```
 
-`formGroup` is the marker that tells the schema walker "this is nested, not a field." Without it, `{ city: {} }` would be ambiguous (a field with a `city` config option? a group of one field?). The marker resolves it.
+`formGroup` tells the schema "this is a nested group, not a field." Without it, `{ city: {} }` would be ambiguous (a field with a `city` config option? a group of one field?). The marker resolves that.
 
-Empty groups are allowed — `formGroup({})` is a valid placeholder for later filling.
+Empty groups are allowed. `formGroup({})` is a valid placeholder you can fill in later.
 
 ## Single-signal snapshot
 
-`form()` returns one atomic snapshot:
+`form()` returns one snapshot:
 
 ```ts
 interface FormSnapshot<S> {
-  values:     Values<S>;       // typed tree, the parsed-and-typed shape
+  values:     Values<S>;       // the parsed, typed value tree
   errors:     Errors<S>;       // tree of { [validatorName]: string | null }
-  touched:    BoolTree<S>;     // recursive booleans
-  dirty:      BoolTree<S>;     // recursive booleans
+  touched:    BoolTree<S>;     // booleans, same shape as the schema
+  dirty:      BoolTree<S>;     // booleans, same shape as the schema
   valid:      boolean;         // every leaf has all-null errors
   pristine:   boolean;         // no field has been touched
-  submitting: boolean;         // between submit-start and resolve
-  submitted:  boolean;         // ever-submitted-successfully flag
+  submitting: boolean;         // true between submit start and resolve
+  submitted:  boolean;         // true after at least one successful submit
 }
 ```
 
-Reading `form()` from a logic-class field (via the `useLogic` tracking pass) subscribes the component to any change in any field. Most apps want the whole snapshot anyway (for `valid` / `submitting` on the submit button); when you don't, the bind proxies read individual fields without touching `form()`.
+Reading `form()` from a logic-class field (via the `useLogic` tracking pass) subscribes the component to any change in any field. Most apps want the whole snapshot anyway (for `valid` and `submitting` on the submit button). When you don't, the bind proxies read individual fields without touching `form()`.
 
 ## Validators
 
-Each entry has a required `name` (becomes the error-map key), a `fn` predicate, and an optional `message` + `htmlAttrs`.
+Each entry has a required `name` (which becomes the error-map key), a `fn` predicate, and optional `message` and `htmlAttrs`.
 
 ```ts
 interface ValidatorEntry<T> {
@@ -145,7 +195,7 @@ The error at `errors.<field>.<validatorName>` is:
 - the `message` string when it fails,
 - the `name` string when it fails and no `message` was set.
 
-Truthy = failed, falsy = valid:
+Truthy means failed, falsy means valid:
 
 ```tsx
 {Form.error.email.required && <p>Email is required</p>}
@@ -154,23 +204,34 @@ Truthy = failed, falsy = valid:
 
 ### Built-in validators
 
-Ship from `@react-logic/utils`. Each sets `name`, sensible `message`, and (where relevant) `htmlAttrs`:
+All come from `@react-logic/utils`. Each one sets a `name`, a default `message`, and where it makes sense the matching HTML attribute on the rendered input.
 
-| Factory | Field type | Sets HTML attr |
-|---|---|---|
-| `required(message?)` | any | `required` |
-| `minLength(n, message?)` | string | `minLength` |
-| `maxLength(n, message?)` | string | `maxLength` |
-| `pattern(regex, message?)` | string | `pattern` (from `regex.source`) |
-| `email(message?)` | string | `type=email`, `inputMode=email` |
-| `url(message?)` | string | `type=url`, `inputMode=url` |
-| `min(n, message?)` | number | `min` |
-| `max(n, message?)` | number | `max` |
-| `integer(message?)` | number | — |
-| `oneOf(values, message?)` | T | — |
-| `custom(name, fn, message?, htmlAttrs?)` | T | as supplied |
+**Works on any field:**
 
-Compose freely — multiple validators on the same field all run, all report independently:
+- `required(message?)` — rejects empty values. Sets `required`.
+
+**For string fields:**
+
+- `minLength(n, message?)` — caps the lower bound. Sets `minLength`.
+- `maxLength(n, message?)` — caps the upper bound. Sets `maxLength`.
+- `pattern(regex, message?)` — matches against a regular expression. Sets `pattern` from `regex.source`.
+- `email(message?)` — validates email format. Sets `type=email` and `inputMode=email`.
+- `url(message?)` — validates URL format. Sets `type=url` and `inputMode=url`.
+
+**For number fields** (use with `parse: Number`):
+
+- `min(n, message?)` — numeric lower bound. Sets `min`.
+- `max(n, message?)` — numeric upper bound. Sets `max`.
+- `integer(message?)` — rejects non-integer values.
+
+**Generic:**
+
+- `oneOf(values, message?)` — accepts only values from the list. Useful for selects.
+- `custom(name, fn, message?, htmlAttrs?)` — escape hatch. You supply the predicate, and optionally the HTML attrs.
+
+Every factory takes an optional trailing `name` argument so you can give two of the same validator distinct keys in the error map (e.g. two `pattern(...)` rules on the same password field).
+
+Combine freely. Multiple validators on the same field all run and report independently:
 
 ```ts
 {
@@ -198,9 +259,9 @@ validators: [
 ]
 ```
 
-For one-offs without the helper, an inline object literal works too — the `formState<const S>` generic preserves the literal `name` automatically.
+For one-offs without the helper, an inline object literal works too. The `formState<const S>` generic preserves the literal `name` automatically.
 
-## HTML attrs ride along into bindings
+## HTML attrs flow through to bindings
 
 Each validator can carry `htmlAttrs` that the bind proxy merges into the input's props:
 
@@ -221,15 +282,15 @@ Each validator can carry `htmlAttrs` that the bind proxy merges into the input's
 ```
 
 Benefits:
-- **Accessibility** — `required` is read by assistive tech.
-- **Mobile keyboards** — `inputMode="email"` shows the email keyboard.
-- **Semantic input types** — `type="email"` triggers built-in input parsing.
+- **Accessibility.** `required` is read by assistive tech.
+- **Mobile keyboards.** `inputMode="email"` shows the email keyboard.
+- **Semantic input types.** `type="email"` triggers built-in input parsing.
 
-`<Form>` renders `<form noValidate>` by default — your JS validators are the source of truth for error messages, browsers won't show their own pop-ups. Override per-form with `<Form noValidate={false}>` to opt back into native validation.
+`<Form>` renders `<form noValidate>` by default. Your JS validators are the source of truth for error messages, so browsers won't show their own pop-ups. Override per-form with `<Form noValidate={false}>` to opt back into native validation.
 
-## `Form.inputs.<path>` — sugar over `bind`
+## Rendering inputs — `Form.inputs`
 
-`Form.inputs` is a pre-built React component per field. Same shape as `bind` — `Form.inputs.email`, `Form.inputs.address.city` — but instead of spreading into your own `<input>` you render it directly:
+`Form.inputs` is a tree of pre-built React components mirroring the schema. The easiest way to render a form: drop them straight into JSX.
 
 ```tsx
 <Form.inputs.email placeholder="Email" />
@@ -241,9 +302,9 @@ Benefits:
 Each component:
 
 - Renders `<select>` for `kind: 'select'`, `<input>` otherwise (checkbox/radio just set `type` via the bind).
-- Wires the bind props (value/checked/onChange/onBlur/name) — these always win over any user-supplied prop with the same name.
-- Forwards every other prop you pass — `placeholder`, `className`, `aria-*`, `id`, etc.
-- Has a stable identity per field (memoised by path), so React doesn't remount on every parent render.
+- Wires the form props (value/checked/onChange/onBlur/name). These always win over any user-supplied prop with the same name.
+- Forwards every other prop you pass: `placeholder`, `className`, `aria-*`, `id`, etc.
+- Has a stable identity per field (cached by path), so React doesn't remount on every parent render.
 
 For `<select>`, pass `<option>` children through:
 
@@ -255,44 +316,6 @@ For `<select>`, pass `<option>` children through:
 </Form.inputs.country>
 ```
 
-When you need more control than the sugar offers — a custom wrapper, a different element type, a third-party styled component — drop back to `<input {...Form.bind.field} />`. The two surfaces are interchangeable.
-
-### ESLint and the `react/jsx-pascal-case` rule
-
-`eslint-plugin-react`'s `react/jsx-pascal-case` rule flags `<Form.inputs.email />` because field names are camelCase. Three options:
-
-- **Use `Form.bind` instead** — `<input {...Form.bind.email} />`. The rule only checks JSX *component* names; spreading into a regular `<input>` doesn't trigger it.
-- **Disable the rule for files using the sugar:**
-  ```js
-  rules: { 'react/jsx-pascal-case': 'off' }
-  ```
-  The repo's `demos/forms` app does exactly this.
-- **Inline disable** at the call site for one-off cases:
-  ```tsx
-  {/* eslint-disable-next-line react/jsx-pascal-case */}
-  <Form.inputs.email />
-  ```
-
-Pick whichever fits your codebase. The `Form.bind` surface is fully equivalent — the sugar is for ergonomics, not semantics.
-
-## bind & error proxies
-
-`Form.bind` mirrors the schema tree. Leaves spread into inputs. Groups become nested proxy branches:
-
-```tsx
-<input {...Form.bind.email} />
-<input {...Form.bind.address.zip} />
-<input {...Form.bind.contact.primary.phone} />
-```
-
-The leaf props change shape based on `kind`:
-
-- **text / select** → `{ name, value, onChange, onBlur, …htmlAttrs }`
-- **checkbox** → `{ name, checked, onChange, onBlur, type: 'checkbox', …htmlAttrs }`
-- **radio** → `{ name, value, onChange, onBlur, type: 'radio', …htmlAttrs }`
-
-For checkbox and radio, the bind sets `type` automatically — spread the bind onto a bare `<input>` with no need to repeat the type in JSX. A validator's `type` (e.g. `email()` setting `type: 'email'`) still wins for text fields.
-
 `Form.error` mirrors the same tree; leaves are the per-validator-name error maps:
 
 ```tsx
@@ -300,13 +323,40 @@ For checkbox and radio, the bind sets `type` automatically — spread the bind o
 {Form.error.address.zip.pattern && <span>Invalid ZIP</span>}
 ```
 
+## Rendering inputs — `Form.bind`
+
+`Form.bind` is the lower-level API. Same tree as `Form.inputs`, but each leaf gives you the raw props instead of a component. Spread them into the element of your choice:
+
+```tsx
+<input {...Form.bind.email} />
+<input {...Form.bind.address.zip} />
+<input {...Form.bind.contact.primary.phone} />
+```
+
+When to reach for `bind` instead of `inputs`:
+
+- **Custom or third-party components.** A styled component, a UI-library input (`<TextField />`, `<MuiInput />`), or your own wrapper — spread the bind onto whatever element you actually want.
+- **A different element entirely.** `<textarea {...Form.bind.notes} />`, or a custom checkbox built from a `<button>`.
+- **ESLint `react/jsx-pascal-case`.** That rule flags `<Form.inputs.email />` because field names are camelCase. Spreading `{...Form.bind.email}` into a plain `<input>` doesn't trigger it. Alternatively, disable the rule for the file (`rules: { 'react/jsx-pascal-case': 'off' }` — the `demos/forms` app does this) or inline-disable at the call site.
+- **Personal preference.** Some teams like seeing the element in JSX every time.
+
+The leaf props change shape based on `kind`:
+
+- **text / select** → `{ name, value, onChange, onBlur, …htmlAttrs }`
+- **checkbox** → `{ name, checked, onChange, onBlur, type: 'checkbox', …htmlAttrs }`
+- **radio** → `{ name, value, onChange, onBlur, type: 'radio', …htmlAttrs }`
+
+For checkbox and radio, the bind sets `type` automatically. Spread it onto a bare `<input>` and you don't need to repeat the type in JSX. A validator's `type` (e.g. `email()` setting `type: 'email'`) still wins for text fields.
+
+`Form.inputs` and `Form.bind` are fully interchangeable. You can mix them in the same form — use the shorthand where it's convenient, drop to bind where you need control.
+
 ## Submit lifecycle
 
 `<Form onSubmit>` is called by the rendered `<form>`'s submit event. The wrapper:
 
-1. `preventDefault`s the event.
+1. Calls `preventDefault` on the event.
 2. Marks every leaf `touched`.
-3. Reads `form()` — if `valid: false`, **aborts** (your handler isn't called).
+3. Reads `form()`. If `valid: false`, **aborts** and your handler isn't called.
 4. Sets `submitting: true` and calls your handler with the typed `values`.
 5. If the handler returns a Promise, awaits it.
 6. Sets `submitting: false` and `submitted: true`.
@@ -317,7 +367,7 @@ For checkbox and radio, the bind sets `type` automatically — spread the bind o
 }}>
 ```
 
-For the "show errors only after a field is touched" UX, gate the error display on `form().touched.<field>` — the wrapper marks every field touched on submit, so unsuccessful submits still highlight the failing fields.
+For the "show errors only after a field is touched" UX, gate the error display on `form().touched.<field>`. The wrapper marks every field touched on submit, so unsuccessful submits still highlight the failing fields.
 
 ## Reset
 
@@ -325,7 +375,7 @@ For the "show errors only after a field is touched" UX, gate the error display o
 logic.form.reset();
 ```
 
-Restores each field to its `initial` value and clears `touched` / `submitted` / `submitting`. Useful after a successful submit or for "cancel" buttons.
+Restores each field to its `initial` value and clears `touched`, `submitted`, and `submitting`. Useful after a successful submit or for "cancel" buttons.
 
 ## What's not yet supported
 
@@ -333,9 +383,9 @@ Restores each field to its `initial` value and clears `touched` / `submitted` / 
 - Async validators (with a `validating` flag on the snapshot)
 - Cross-field validators (`confirmPassword` matches `password`)
 - File inputs
-- Object-level validators (whole-tree Zod / class-validator) — use per-field validators for now; the lib's `oneOf`/`pattern` covers most schema-shaped checks.
+- Object-level validators (whole-tree Zod / class-validator). Use per-field validators for now. The lib's `oneOf` and `pattern` cover most schema-shaped checks.
 
 ## See also
 
-- [Reactive state](./reactive-state) — `state`, `computedState`, the primitives `formState` sits on top of.
-- [Dependency injection](./dependency-injection) — share a form across components by hoisting the form-owning class into a service.
+- [Reactive state](./reactive-state) — `state` and `computedState`, the building blocks `formState` is built on.
+- [Dependency injection](./dependency-injection) — share a form across components by moving the form-owning class into a service.

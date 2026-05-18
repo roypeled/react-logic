@@ -4,12 +4,12 @@ sidebar_position: 4
 
 # Fetch state
 
-HTTP-shaped reactive state. One helper, two modes:
+Reactive state for HTTP requests. One helper, two modes:
 
-- **`fetchState(build, config?)`** — reactive: the build callback is tracked, the request re-fires when its inputs change.
-- **`fetchState.callable(build, config?)`** — imperative: the build callback only runs when you call `.fetch(...)`.
+- **`fetchState(build, config?)`** — reactive. The build callback is tracked, and the request re-fires when its inputs change.
+- **`fetchState.callable(build, config?)`** — imperative. The build callback only runs when you call `.fetch(...)`.
 
-Both share the same accessor surface, the same state machine, the same body normalisation, the same pluggable transport.
+Both share the same accessor, the same state machine, the same body handling, and the same pluggable transport.
 
 ## The accessor
 
@@ -31,7 +31,7 @@ type FetchStateValue<T> =
   | { idle: false; loading: false; failed: true;  status?: number; error: Error };
 ```
 
-Four variants. Branch on `idle` / `loading` / `failed`, then read `result` / `error` / `status`. TypeScript narrows correctly:
+Four variants. Branch on `idle`, `loading`, or `failed`, then read `result`, `error`, or `status`. TypeScript narrows correctly:
 
 ```tsx
 const Profile = () => {
@@ -44,22 +44,22 @@ const Profile = () => {
 };
 ```
 
-**`idle`** — only emitted by `fetchState.callable` before its first `.fetch(...)`. Reactive `fetchState` skips this state: the build callback fires immediately on construction, so the initial value is `loading`. The `idle` branch in reactive consumer code is dead code (TypeScript still allows it; runtime never reaches it).
+**`idle`** — "nothing has been requested yet." You only see it when using `fetchState.callable`, before the first `.fetch(...)` call. Reactive `fetchState` starts in `loading` and never goes through `idle`.
 
-**`status`** — HTTP status code from the response. Always present on success. Present on failed only when the request reached a response (`parse` threw, non-2xx default-parse rejected, etc.). Absent on pure network failures (CORS, DNS, fetch threw before a response existed).
+**`status`** — HTTP status code from the response. Always present on success. Present on failed only when the request reached a response (`parse` threw, a non-2xx response, etc.). Absent on pure network failures (CORS, DNS, fetch threw before a response existed).
 
 ### Narrowing patterns
 
-Boolean narrowing collapses cleanly for the three "did something happen" states:
+Boolean narrowing works cleanly for the three "did something happen" states:
 
 ```ts
 if (s.idle) { /* not fired yet */ }
 if (s.loading) { /* in flight */ }
 if (s.failed) { /* error */ }
-// remaining variant is the success one — s.result and s.status available
+// the remaining variant is success — s.result and s.status are available
 ```
 
-For "only show the result when there is one," `'result' in s` is the precise narrowing:
+For "only show the result when there is one," `'result' in s` is the right check:
 
 ```ts
 if ('result' in s) {
@@ -73,10 +73,10 @@ if ('result' in s) {
 Both modes accept a build callback that returns one of:
 
 - **a URL string** — shorthand for a GET to that URL,
-- **a `FetchStateRequest` descriptor** — `{ url, method?, headers?, body?, parse?, fetcher?, … }` when you need anything beyond a GET,
-- **`null` / `undefined` / empty string** — *only meaningful in reactive `fetchState`* — skip the fetch this tick; state stays where it is.
+- **a `FetchStateRequest` object** — `{ url, method?, headers?, body?, parse?, fetcher?, … }` when you need anything beyond a GET,
+- **`null`, `undefined`, or an empty string** — *only meaningful in reactive `fetchState`*. Skip the fetch this time. State stays as it was.
 
-The optional second argument supplies **static defaults** merged into every request. Per-call values win on conflict; `headers` deep-merge so a default `Authorization` survives a per-call `Content-Type`.
+The optional second argument supplies **static defaults** merged into every request. Per-call values win on conflict. `headers` are deep-merged, so a default `Authorization` survives a per-call `Content-Type`.
 
 ```ts
 // Bare URL — simple GET.
@@ -97,38 +97,114 @@ fetchState(
 
 ## fetchState — reactive
 
-Build callback tracks every signal it reads. The fetch re-fires whenever a tracked signal changes.
+Any signal the build callback reads becomes a dependency. When one changes, the fetch fires again with the new value and any in-flight request is aborted.
+
+```ts
+import { state } from '@react-logic/react-logic';
+import { fetchState } from '@react-logic/utils';
+
+class Search {
+  query  = state('');
+  region = state('us');
+
+  results = fetchState(() => {
+    const q = this.query();    // tracked
+    const r = this.region();   // tracked
+    return q ? `/search?q=${encodeURIComponent(q)}&region=${r}` : null;
+  });
+}
+```
+
+Writing to `query` or `region` triggers a new fetch. The `q ? … : null` pattern returns `null` to skip the request entirely when the query is empty (the state stays in its previous value).
+
+The build callback can also take arguments — `fetchState((q, page) => …)` — and you write to them via `.fetch(q, page)`. Use the args form when the values driving the fetch don't need to be displayed in the UI on their own; the args are stored internally and aren't accessible from the returned fetch-state object. If a component needs to render the current query (or any other driver) directly, keep it in its own `state()` and read it inside the callback instead.
+
+```ts
+class Search {
+  // args form — the query is internal to the fetch; nothing else reads it.
+  results = fetchState((q = '', page = 1) =>
+    q ? `/search?q=${encodeURIComponent(q)}&page=${page}` : null
+  );
+}
+
+logic.results.fetch('react', 2);   // sets the args and fires
+logic.results.fetch();             // re-fires with the same args
+```
+
+### Three ways to write the build callback
+
+Pick whichever matches your data flow:
+
+**No args.** Reads outer signals. `.fetch()` re-runs the request with the current values.
+
+```ts
+fetchState(() => `/users/${this.userId()}`);
+```
+
+**Args with a default.** The default value seeds the initial run, and the callback can assume the arg is defined.
+
+```ts
+fetchState((page = 1) => `/items?page=${page}`);
+```
+
+**Args without a default.** The initial value is `undefined`, so the callback has to handle that explicitly. Return `null` to skip the fetch until something calls `.fetch(value)`.
+
+```ts
+fetchState((id: string | undefined) =>
+  id ? `/users/${id}` : null
+);
+```
+
+Don't write `(id: string) => …` without `| undefined` or a default — TypeScript will error because the initial value really is undefined.
+
+## fetchState.callable — imperative
+
+Reactive mode is wrong for mutations and one-off triggers. There's no signal whose change should fire a POST. `.callable` flips the control. The build callback only runs when you call `.fetch(...)`. Signals read inside the build are **not** tracked.
 
 ```ts
 import { fetchState } from '@react-logic/utils';
 
-class Search {
-  results = fetchState((q = '') =>
-    q ? `/search?q=${encodeURIComponent(q)}` : null
-  );
+class Comments {
+  // Object form — body varies per call.
+  post = fetchState.callable((message: string) => ({
+    url: '/api/comments',
+    method: 'POST',
+    body: { message },   // plain object — auto-stringified
+  }));
+
+  // URL-string shortcut — imperative GET.
+  fetchOne = fetchState.callable((id: string) => `/api/comments/${id}`);
 }
 ```
 
 Operations:
 
-- `results()` — read the current `FetchStateValue`.
-- `results.fetch('react')` — write the wrapped input signal. The tracked effect re-runs with the new value, aborting any in-flight request.
-- `results.fetch()` — re-fire with the current input (same URL, same args).
+- `post()` — read the current `FetchStateValue`. Never fires a request.
+- `post.fetch('hello world')` — fire a request. Aborts any in-flight call.
+- `post.fetch()` — re-run the most recent `.fetch(...)` with the same args. Does nothing before the first `.fetch(...)`.
 
-### URL-function shapes
+```tsx
+const SubmitBox = () => {
+  const c = useLogic(Comments);
+  const s = c.post();
+  return (
+    <>
+      <button onClick={() => c.post.fetch(draft)} disabled={s.loading}>
+        Post
+      </button>
+      {s.failed && <span>Failed: {s.error.message}</span>}
+      {'result' in s && <span>Posted ✓</span>}
+      {s.idle && <span className="hint">Type a message and submit</span>}
+    </>
+  );
+};
+```
 
-The build callback follows the same conditional-type rules as `computedState`:
-
-| Callback | `.fetch` arg | Notes |
-|---|---|---|
-| `() => …` | none — only `.fetch()` (refetch) | depends on outer signals; `.fetch()` re-runs |
-| `(q: I \| undefined) => …` | `I \| undefined` | reactive input variant |
-| `(q = default) => …` | `I` (narrowed via default arg) | reactive input variant with seeded default |
-| `(q: I) => …` | unsafe — TS error | wrapped signal starts undefined; callback must accept undefined |
+Initial state is `{ idle: true, loading: false, failed: false }`. The request hasn't been fired yet. The first `.fetch(...)` transitions to loading. The resolve transitions to success or failed. UIs can branch on `idle` to show a "start" button or empty state, separate from the loading spinner.
 
 ## Verb helpers — postFetchState / putFetchState / deleteFetchState
 
-Sugar over `fetchState` with the HTTP method baked in. Each helper preserves the full surface — the helper itself is reactive, `.callable` is the imperative companion — just with the method pre-set:
+Shorthand for `fetchState` with the HTTP method baked in. Each helper preserves the full API: the helper itself is reactive, and `.callable` is the imperative companion. The method is just pre-set:
 
 ```ts
 import { postFetchState, putFetchState, deleteFetchState } from '@react-logic/utils';
@@ -153,58 +229,13 @@ const update = putFetchState.callable((id: string, body: Patch) => ({ url: `/ite
 const remove = deleteFetchState.callable((id: string) => `/items/${id}`);
 ```
 
-The per-call descriptor still wins on conflict — `postFetchState.callable(() => ({ url, method: 'PATCH' }))` will PATCH, despite the helper's name. The helper's preset is the default, not a lock.
+The per-call object still wins on conflict. `postFetchState.callable(() => ({ url, method: 'PATCH' }))` will PATCH, despite the helper's name. The helper's preset is the default, not a lock.
 
-`fetchState` itself defaults to GET when no method is given; pass `method` in the config or the build-callback descriptor to override.
-
-## fetchState.callable — imperative
-
-Reactive mode is wrong for mutations and one-off triggers — there's no signal whose change should fire a POST. `.callable` flips the control: the build callback only runs when the consumer calls `.fetch(...)`. Signals read inside the build are **not** tracked.
-
-```ts
-import { fetchState } from '@react-logic/utils';
-
-class Comments {
-  // Descriptor form — body varies per call.
-  post = fetchState.callable((message: string) => ({
-    url: '/api/comments',
-    method: 'POST',
-    body: { message },   // plain object — auto-stringified
-  }));
-
-  // URL-string shortcut — imperative GET.
-  fetchOne = fetchState.callable((id: string) => `/api/comments/${id}`);
-}
-```
-
-Operations:
-
-- `post()` — read the current `FetchStateValue`. Never fires.
-- `post.fetch('hello world')` — fire a request. Aborts any in-flight call.
-- `post.fetch()` — re-run the most recent `.fetch(...)` with the same args. No-op before the first `.fetch(...)`.
-
-```tsx
-const SubmitBox = () => {
-  const c = useLogic(Comments);
-  const s = c.post();
-  return (
-    <>
-      <button onClick={() => c.post.fetch(draft)} disabled={s.loading}>
-        Post
-      </button>
-      {s.failed && <span>Failed: {s.error.message}</span>}
-      {'result' in s && <span>Posted ✓</span>}
-      {s.idle && <span className="hint">Type a message and submit</span>}
-    </>
-  );
-};
-```
-
-Initial state is `{ idle: true, loading: false, failed: false }` — the request has not been fired yet. First `.fetch(...)` transitions to loading; the resolve transitions to success or failed. UIs can branch on `idle` to render a "start" button or empty state distinct from the loading spinner.
+`fetchState` itself defaults to GET when no method is given. Pass `method` in the config or the build-callback object to override.
 
 ## Config
 
-The second argument to either form (and the descriptor a build callback may return) share the same shape:
+The second argument to either form (and the object a build callback may return) share the same shape:
 
 ```ts
 interface FetchStateConfig<T> extends Omit<RequestInit, 'signal' | 'window' | 'body'> {
@@ -214,7 +245,7 @@ interface FetchStateConfig<T> extends Omit<RequestInit, 'signal' | 'window' | 'b
 }
 ```
 
-Standard `RequestInit` fields (`method`, `headers`, `credentials`, `mode`, `cache`, `referrerPolicy`, …) go straight through. `signal` is set automatically — don't pass your own.
+Standard `RequestInit` fields (`method`, `headers`, `credentials`, `mode`, `cache`, `referrerPolicy`, …) pass through unchanged. `signal` is set automatically. Don't pass your own.
 
 ### Body auto-stringify
 
@@ -239,7 +270,7 @@ fetchState.callable((file: File) => {
 
 ### parse
 
-`parse` turns the response into the value. Default behaviour:
+`parse` turns the response into the value. Default behavior:
 
 ```ts
 const defaultParse = async (r) => {
@@ -257,15 +288,15 @@ results = fetchState(
 );
 ```
 
-Throwing inside `parse` lands in the failed state with that error and the response's `status`.
+Throwing inside `parse` puts the state into failed with that error and the response's `status`.
 
 ### fetcher
 
-Per-call HTTP adapter, overriding the global one set via `setFetchStateAdapter`. Useful for one-off requests through a different axios instance, a mock client in a test, or a special transport.
+A per-call HTTP adapter that overrides the global one set via `setFetchStateAdapter`. Useful for one-off requests through a different axios instance, a mock client in a test, or a special transport.
 
 ## Pluggable transport — `setFetchStateAdapter`
 
-Every fetch goes through a `FetchAdapter`. The default wraps `globalThis.fetch`; swap it once at app boot to route every reactive fetch through your HTTP client of choice (axios with interceptors, auth headers, base URL, retries, etc.).
+Every fetch goes through a `FetchAdapter`. The default wraps `globalThis.fetch`. Swap it once at app start to route every reactive fetch through your HTTP client of choice (axios with interceptors, auth headers, base URL, retries, etc.).
 
 ```ts
 import axios from 'axios';
@@ -280,9 +311,9 @@ After that, every `fetchState(...)` and `fetchState.callable(...)` call uses axi
 
 `createAxiosFetchAdapter(axios)` takes an axios-compatible client (axios itself, an `axios.create({...})` instance, or anything structurally equivalent) and returns a `FetchAdapter`. The adapter:
 
-- Forces raw-text mode (`responseType: 'text'`, identity `transformResponse`) so `parse`'s `json()` / `text()` contract matches the native `fetch` behaviour.
-- Sets `validateStatus: null` so axios doesn't throw on non-2xx — non-success responses surface via `ok: false` on the wrapped response.
-- Forwards `method` / `headers` / `body` / `signal` from the wrapper to axios.
+- Forces raw-text mode (`responseType: 'text'`, identity `transformResponse`) so `parse`'s `json()` and `text()` behave the same as native `fetch`.
+- Sets `validateStatus: null` so axios doesn't throw on non-2xx. Non-success responses surface via `ok: false` on the wrapped response.
+- Forwards `method`, `headers`, `body`, and `signal` from the wrapper to axios.
 
 ```ts
 const adapter = createAxiosFetchAdapter(
@@ -294,11 +325,11 @@ const adapter = createAxiosFetchAdapter(
 setFetchStateAdapter(adapter);
 ```
 
-Axios is **not** a hard dependency of `@react-logic/utils` — you pass your own instance in.
+Axios is **not** a hard dependency of `@react-logic/utils`. You pass your own instance in.
 
 ### Custom adapters
 
-`FetchAdapter` is a 1-function interface:
+`FetchAdapter` is a single-function interface:
 
 ```ts
 type FetchAdapter = (
@@ -314,7 +345,7 @@ interface FetchResponse {
 }
 ```
 
-Implement it for any HTTP client — `ky`, `got`, an internal RPC layer, a mock for tests.
+Implement it for any HTTP client: `ky`, `got`, an internal RPC layer, or a mock for tests.
 
 ## Cancellation
 
@@ -324,21 +355,17 @@ Both modes create an `AbortController` per request. The previous request's contr
 - For reactive `fetchState`, a tracked signal that the build callback reads changes.
 - The owning logic class or service is disposed.
 
-Aborted requests never transition state — the new fetch's transitions take over.
+Aborted requests don't change state. The new fetch's transitions take over.
 
-## fetchState vs fetchState.callable vs asyncState
+## Which one do I use?
 
-| | `fetchState` | `fetchState.callable` | `asyncState` |
-|---|---|---|---|
-| Trigger | reactive (signal change) | imperative (`.fetch(...)`) | reactive (signal change) |
-| State shape | discriminated `FetchStateValue` | discriminated `FetchStateValue` | bare `T \| undefined` |
-| Cancellation | built-in | built-in | manual |
-| Body stringify | built-in | built-in | manual |
-| HTTP status | exposed | exposed | n/a |
-| Transport | pluggable adapter | pluggable adapter | direct `fetch` |
-| Right for | GET, search, "fetch when key changes" | POST/PUT/DELETE, "fire on button click" | producers that do more than HTTP |
+**`fetchState`** — for reads that should fire automatically when their inputs change. Search-as-you-type, "load this user when the route changes," anything where the request is a function of state. Gives you loading / failed / success branches and cancels the previous request when a new one fires.
+
+**`fetchState.callable`** — for requests that should only happen on demand. POST / PUT / DELETE, "submit this form," "retry this." Same state shape and cancellation as the reactive form; you decide when to fire by calling `.fetch(...)`.
+
+**`asyncState`** — for async work that isn't an HTTP request, or where you want a plain `T | undefined` value instead of a tagged-union state. No built-in cancellation, no HTTP status, no body handling — just a signal whose value comes from an async function.
 
 ## See also
 
-- [Async state](./async-state) — when the producer does more than fetch.
-- [Reactive state](./reactive-state) — `effect`, `state`, the primitives this helper sits on top of.
+- [Async state](./async-state) — when the function does more than fetch.
+- [Reactive state](./reactive-state) — `effect` and `state`, the building blocks this helper is built on.

@@ -4,15 +4,15 @@ sidebar_position: 3
 
 # Async state
 
-`asyncState` models values that come from a Promise but should re-run when the inputs change. Lives in the optional `@react-logic/utils` package:
+`asyncState` is for values that come from a Promise and should re-run when the inputs change. It lives in the optional `@react-logic/utils` package:
 
 ```sh
 npm install @react-logic/utils
 ```
 
-For the HTTP-specific cancellation + status + adapter story, see the [fetch state guide](./fetch-state) — it's a separate helper with a richer state shape.
+For HTTP-specific cancellation, status, and adapters, see the [fetch state guide](./fetch-state). It's a separate helper with a richer state shape.
 
-## The producer
+## The function
 
 ```ts
 import { state } from '@react-logic/react-logic';
@@ -30,13 +30,13 @@ class UserProfile {
 }
 ```
 
-`asyncState(fn)` runs `fn` inside an effect. Any signal the producer reads becomes a tracked dependency. When one changes, the producer re-runs and the resolved value notifies subscribers.
+Any signal the async function reads becomes a dependency. When one changes, the function re-runs and the new resolved value replaces the old one.
 
 Reading `profile()` returns:
 
 - `undefined` until the first resolve completes,
-- the resolved value afterwards,
-- a new value whenever a tracked signal changes (the producer re-runs).
+- the resolved value after that,
+- a new value whenever a tracked signal changes (the function re-runs).
 
 The component reads it like any other signal:
 
@@ -51,7 +51,7 @@ const Profile = () => {
 
 ## Loading + error states
 
-`asyncState` only models the *value*. Loading and error states live in companion signals you control:
+`asyncState` only stores the *value*. Loading and error states live in extra signals you manage:
 
 ```ts
 class UserProfile {
@@ -88,11 +88,11 @@ if (!logic.profile()) return null;
 return <UserCard user={logic.profile()!} />;
 ```
 
-If you're writing this pattern *every* time, you probably want [fetchState](./fetch-state) — it bakes the loading/error machinery into a single discriminated state.
+If you write this pattern every time, you probably want [fetchState](./fetch-state). It bakes the loading/error machinery into a single state object.
 
 ## Race conditions
 
-If a key changes before the previous fetch resolves, the older request can race the newer one and overwrite fresh data. Track the in-flight key and discard out-of-date results:
+If a key changes before the previous fetch resolves, the older request can race the newer one and overwrite fresh data. Track the in-flight key and discard stale results:
 
 ```ts
 profile = asyncState(async () => {
@@ -106,7 +106,7 @@ profile = asyncState(async () => {
 });
 ```
 
-This returns the *previous* value when superseded, avoiding a flash of stale data on the way to the fresh result.
+This returns the *previous* value when the result is stale, avoiding a flash of stale data on the way to the fresh result.
 
 ## Cancellation via AbortController
 
@@ -136,11 +136,11 @@ class UserProfile {
 }
 ```
 
-If this pattern is *the* thing you're doing, use [`fetchState`](./fetch-state) — it wraps the boilerplate.
+If this is what you're doing, use [`fetchState`](./fetch-state). It wraps the boilerplate.
 
 ## Multiple keys
 
-Reading more than one signal makes the producer re-run when *any* of them change:
+Reading more than one signal makes the function re-run when *any* of them change:
 
 ```ts
 profile = asyncState(async () => {
@@ -151,17 +151,17 @@ profile = asyncState(async () => {
 });
 ```
 
-Exactly what you want for "fetch when either input changes" — no manual dependency arrays.
+Exactly what you want for "fetch when either input changes". No manual dependency arrays.
 
 ## When not to use asyncState
 
-- **One-shot loads at construction time.** Just `await` directly in the constructor and write to a regular `state` — simpler, no tracking overhead.
-- **HTTP requests with cancellation + status + error states.** Use [fetchState](./fetch-state) — it solves this specific shape with less boilerplate.
-- **Mutations (POST/PUT/DELETE) you trigger imperatively.** Use [`fetchState.callable`](./fetch-state#fetchstatecallable--imperative) — `asyncState` re-runs on signal changes, which is the wrong shape for a button click.
+- **One-shot loads at construction time.** Just `await` directly in the constructor and write to a regular `state`. Simpler, no tracking overhead.
+- **HTTP requests with cancellation, status, and error states.** Use [fetchState](./fetch-state). It handles this case with less boilerplate.
+- **Mutations (POST/PUT/DELETE) you trigger from code.** Use [`fetchState.callable`](./fetch-state#fetchstatecallable--imperative). `asyncState` re-runs on signal changes, which is the wrong shape for a button click.
 - **Caching, retries, optimistic updates.** Use a real data-fetching library (TanStack Query, SWR) and wrap it in a service if you want to inject it.
 
 ## See also
 
 - [Fetch state](./fetch-state) — HTTP-specific helper with cancellation, status, pluggable transport, and a callable variant for mutations.
-- [Reactive state](./reactive-state) — `effect`, `state`, the primitives `asyncState` sits on top of.
-- [Dependency injection](./dependency-injection) — hoisting async data into a service so multiple components share it.
+- [Reactive state](./reactive-state) — `effect` and `state`, the building blocks `asyncState` is built on.
+- [Dependency injection](./dependency-injection) — moving async data into a service so multiple components share it.

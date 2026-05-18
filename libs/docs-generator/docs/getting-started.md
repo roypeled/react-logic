@@ -10,9 +10,9 @@ sidebar_position: 2
 npm install @react-logic/react-logic
 ```
 
-This single package bundles the three required pieces — `core` (the `useLogic` hook), `state` (`state` / `computedState` / `effect` / `batch`), and `di` (`inject`, `Injector`, tokens).
+This package includes the three core pieces: `core` (the `useLogic` hook), `state` (`state`, `computedState`, `effect`, `batch`), and `di` (`inject`, `Injector`, tokens).
 
-Optional helpers like `asyncState` and `fetchState` live in `@react-logic/utils` — install it when you need them:
+Optional helpers like `asyncState` and `fetchState` live in `@react-logic/utils`. Install it when you need them:
 
 ```bash
 npm install @react-logic/utils
@@ -46,17 +46,17 @@ export const Counter = () => {
 That's the whole loop:
 
 1. The class holds state via `state()` and derived values via `computedState()`.
-2. `useLogic` constructs an instance, returns it, and re-renders the component when any signal it reads changes.
-3. The component reads signals as functions (`logic.count()`) and writes by calling them with a value (`this.count(next)`).
+2. `useLogic` creates an instance and re-renders the component when any signal it reads changes.
+3. The component reads a signal by calling it (`logic.count()`) and writes by calling it with a value (`this.count(next)`).
 
-No `useState`, no `useEffect`, no memoisation. The logic class is the source of truth.
+No `useState`, no `useEffect`, no manual caching. The logic class is the source of truth.
 
 ## Sharing state with dependency injection
 
 When two components need the same state, lift it to a **service** — another class — and inject it into both logic classes:
 
 ```tsx
-import { inject, Injector } from '@react-logic/react-logic';
+import { inject } from '@react-logic/react-logic';
 
 class CartStore {
   items = state<Item[]>([]);
@@ -71,14 +71,15 @@ class CartList {
   cart = inject(CartStore);
 }
 
-// Provide the service once, near the root.
-<Injector provide={[CartStore]}>
-  <Header />   {/* uses CartCount → reads cart.items().length */}
-  <Sidebar />  {/* uses CartList → reads cart.items() */}
-</Injector>
+// No setup needed — both classes resolve `CartStore` from the root scope,
+// and get the same instance.
+<Header />   {/* uses CartCount → reads cart.items().length */}
+<Sidebar />  {/* uses CartList  → reads cart.items() */}
 ```
 
-The bare class `CartStore` in the `provide` array is sugar for `{ provide: CartStore, useClass: CartStore }`. Two consumers, one shared service. The service is constructed lazily on first inject and torn down when the `<Injector>` unmounts.
+That's it. Services are registered in a root scope by default, so `inject(CartStore)` just works. 
+
+Optionally, use `<Injector provide={[…]}>` when you want to **scope** a service to a subtree (independent instances, or providing a different implementation for that branch).
 
 ## Cleanup
 
@@ -100,7 +101,7 @@ For logic classes, the callback fires on component unmount. For services, on `<I
 
 ## Where to next
 
-- [Concepts](/docs/concepts) — the mental model: signals, DI, scopes.
-- [Guides](/docs/guides) — deep-dive walkthroughs of each subsystem.
-- [Recipes](/docs/recipes) — code-first answers to common shapes.
+- [Concepts](/docs/concepts) — how signals, DI, and scopes work.
+- [Guides](/docs/guides) — walkthroughs of each part of the library.
+- [Recipes](/docs/recipes) — code examples for common problems.
 - [API Reference](/docs/api) — generated reference for every export.

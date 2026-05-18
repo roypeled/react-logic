@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Why react-logic?
 
-React's component model encourages mixing **rendering** with **business logic**. State, side effects, derivation, and dependency wiring all live in the same function body that decides what's on screen. As a feature grows, the function grows; testing a piece of behavior means rendering a component.
+React mixes **rendering** with **business logic**. State, side effects, derived values, and dependencies all live in the same function that decides what's on screen. As a feature grows, the function grows. Testing a piece of behavior means rendering a component.
 
 react-logic separates the two:
 
@@ -13,26 +13,49 @@ react-logic separates the two:
 
 ## What you get
 
-**Logic that's framework-agnostic in shape.** A logic class is just a class. You can construct it without React, write unit tests against it without `@testing-library/react`, and read it from a debugger without dancing around hook order.
+**Logic decoupled from React.** A logic class is just a class. You can create one without React, unit test it without `@testing-library/react`, and step through it in a debugger without worrying about hook order.
 
-**Real reactivity, not React's.** State is signal-backed. `count()` and `count(next)` read and write. Components subscribe automatically to whichever signals their logic class exposes — no `useState` chains, no manual selectors, no memoisation incantations.
+**Real reactivity.** State is built on signals. `count()` reads, `count(next)` writes. Components automatically re-render when any signal they read changes — no `useState` chains, no manual selectors, no `useMemo` boilerplate.
 
-**Dependency injection that scopes correctly.** Services live as long as the `<Injector>` that provides them — not as long as the component that consumes them. Hide and re-show a component without losing the work; tear down a feature and its services go with it.
+**Dependency injection with the right lifetimes.** Services live as long as the `<Injector>` that provides them, not as long as the component that uses them. You can hide and re-show a component without losing its state. Remove a feature and its services go with it.
 
-**Adapters where they matter.** The DI layer is pluggable. The default adapter ships with the lib; the Angular adapter lets you back react-logic with Angular's `EnvironmentInjector` so you can share existing Angular services across a React tree.
+**Adapters where they matter.** The DI layer is pluggable. The default adapter ships with the library. The Angular adapter lets you back react-logic with Angular's `EnvironmentInjector` so you can share Angular services across a React tree.
 
 ## What it's not
 
-- A state-management framework. No store, no actions, no time-travel devtools. State lives on logic instances; that's the whole model.
-- A render optimisation library. The signal layer minimises re-renders, but if you're chasing per-microsecond render budgets, this is not where to look.
-- An Angular port. The Angular adapter is interop, not migration.
+- A central store. No global store, no actions, no time-travel devtools. State lives on the logic instance that owns it — local where it should be local, shared via DI where it should be shared. It's still state management, just without the boilerplate.
+- A render optimizer by default. Signals do cut re-renders, and you can opt into more control with `batch()` or by keeping fine-grained reads inside the component. If you need per-microsecond render budgets, that's still on you.
 
 ## When to reach for it
 
-Reach for react-logic when:
+Pick the concept that matches the job:
 
-- A component has grown enough internal state and effects that it's hard to reason about.
-- You want to share behavior across components without lifting it to context-and-reducer ceremony.
-- You're already writing logic in classes (or want to) and find React's hook model fights that style.
+- **Logic class — for component-local reactive state.** When a component has more state and effects than it can carry cleanly, move them onto a logic class and wire it up with `useLogic`. State, computed values, and methods all live in one place, type-checked together, and React re-renders when the signals you read change.
+- **Injectable service — for shared stores.** When more than one component (or more than one logic class) needs the same state, lift it into a class and provide it through `<Injector>`. Anything in that subtree can `inject()` it. The service outlives individual mounts, so toggling a component off and on doesn't lose its data.
+- **Both, together.** A common shape: a thin logic class per component for view-specific state, injecting one or more services for shared concerns (auth, cart, current user, etc.).
 
-If your component is genuinely stateless or trivially stateful, plain React is fine.
+### Testing is the easy part
+
+Logic classes and services are plain classes that run outside React. The framework ships a small test helper that builds them inside an injection scope, so you can swap any dependency for a fake without touching the class under test or rendering anything:
+
+```ts
+import { createTestInjectionScope } from '@react-logic/core/testing';
+
+const test = createTestInjectionScope([
+  { provide: Api, useValue: { fetchItems: async () => [{ id: 1, price: 10 }] } },
+]);
+const logic = test.build(CartLogic);
+
+await logic.load();
+expect(logic.total()).toBe(10);
+
+test.dispose();
+```
+
+That's it: one provider override, one `build()` call, no rendering, no `renderHook`, no provider tree.
+
+Because logic lives on a class instead of inside a component, the state and methods are directly inspectable. You can read `logic.total()`, assert on `logic.cart.items()`, call `logic.checkout()` and check what changed. A React component is opaque by comparison — it returns JSX and that's all you get to see from the outside. Tests against components end up asserting on rendered output as a proxy for state; here you assert on the state itself.
+
+The full testing guide covers async flushing and a few other helpers.
+
+If your component is stateless or only has a little state, plain React is fine.

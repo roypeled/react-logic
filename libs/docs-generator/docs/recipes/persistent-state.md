@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Persistent state across hide/show
 
-State that survives a component being toggled off and back on. Lift it into a service; the component just references it.
+State that survives a component being toggled off and back on. Move it into a service. The component just references it.
 
 ```tsx
 import { inject, useLogic, state, Injector } from '@react-logic/react-logic';
@@ -45,7 +45,7 @@ const Page = () => {
 };
 ```
 
-Toggle off → on → count is preserved. The store outlives the panel's mount cycles.
+Toggle off, then on, and the count is preserved. The store outlives the panel's mount cycles.
 
 ## Multiple independent instances
 
@@ -62,7 +62,7 @@ const Page = () => (
 );
 ```
 
-Each `<Injector>` scopes its own `CounterStore`. Each panel has an independent counter that survives its own visibility toggles, both die with `<Page>`.
+Each `<Injector>` scopes its own `CounterStore`. Each panel has an independent counter that survives its own visibility toggles. Both are disposed when `<Page>` unmounts.
 
 ## See also
 

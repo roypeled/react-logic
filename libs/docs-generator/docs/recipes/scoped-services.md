@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Sharing services scoped to a tree
 
-One service, multiple components, lifetime bounded by an `<Injector>`. Leave the feature → service is disposed cleanly.
+One service shared by multiple components, with a lifetime bounded by an `<Injector>`. Leave the feature and the service is disposed cleanly.
 
 ```tsx
 import {
@@ -65,7 +65,7 @@ Two `<Injector>`s, two scopes, two independent stores.
 </Injector>
 ```
 
-Services that nothing injects are never instantiated — providers are lazy.
+Services that nothing injects are never created. Providers are lazy.
 
 ## See also
 

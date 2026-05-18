@@ -94,7 +94,7 @@ const sidebars: SidebarsConfig = {
         'concepts/signals',
         {
           type: 'category',
-          label: 'DI in React',
+          label: 'Dependency injection in React',
           link: { type: 'doc', id: 'concepts/di-in-react/index' },
           items: [
             'concepts/di-in-react/injectables',
