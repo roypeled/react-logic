@@ -1,10 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,slnt,wdth,wght,GRAD,XOPQ,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC@8..144,-10..0,25..151,100..1000,-133,27..175,323..603,79,649..854,-305..-98,738,416..570,528..760&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
-@function --lighten(--color, --amount) {
-  result: oklch(from var(--color) calc(l * (1 + var(--amount))) c h);
-}
-
 /* All rules wrapped in `html { ... }` via CSS nesting to raise specificity
    by +1 (an element selector). Beats Docusaurus' default selectors when
    production CSS chunk ordering puts theirs after ours. */

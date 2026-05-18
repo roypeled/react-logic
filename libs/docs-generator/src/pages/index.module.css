@@ -114,6 +114,33 @@
   color: var(--ifm-color-primary);
 }
 
+@media (max-width: 800px) {
+  .hero {
+    padding: 3rem 0rem 3rem;
+    gap: 1rem;
+  }
+  .title {
+    font-size: 2.25rem;
+  }
+  .tagline {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    margin: 0 .5rem;
+  }
+  .features {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    margin: 0.75rem 1rem;
+  }
+  .logo {
+    width: 100px;
+    height: 100px;
+  }
+  .logoBg {
+    display: none;
+  }
+}
+
 .exampleWrap {
   width: min(1200px, calc(100% - 2rem));
   margin: 0 auto 1.5rem;
@@ -175,6 +202,30 @@
   }
   .exampleTabs {
     flex-direction: column;
+  }
+  /* Shrink code so most lines fit at portrait widths; remaining long lines
+     scroll horizontally inside the block instead of forcing the page wider. */
+  .snippet pre,
+  .snippet code {
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+  .snippet :global(.theme-code-block),
+  .snippet pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  /* Grid items default to min-width:auto (= min-content) so a long line of
+     code expands the track wider than the viewport. min-width:0 lets it
+     shrink and the inner pre handles overflow itself. */
+  .snippet, .demo, .menu {
+    min-width: 0;
+  }
+  .exampleWrap {
+    margin-inline: 0rem;
+    overflow: hidden;
+    align-self: flex-start;
+    width: 100%;
   }
 }
 
@@ -413,6 +464,40 @@
   flex-wrap: wrap;
   justify-content: center;
   margin-bottom: 50vh;
+
+  * {
+    width: 200px;
+  }
+}
+
+@media (max-width: 800px){
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    width: 100vw;
+    overflow: hidden;
+    margin-bottom: 0;
+
+    *{
+      width: 50vw;
+
+    }
+
+    *:after {
+      opacity: 1 !important;
+    }
+
+    *:first-child:after {
+      mask-border: none;
+    }
+
+    *:last-child:after {
+      margin-left: -10px;
+      mask-border-width: 0 0 0 20px;
+    }
+  }
+
 }
 
 @media (max-width: 600px) {

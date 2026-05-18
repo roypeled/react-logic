@@ -234,13 +234,6 @@ const Example = () => {
   );
 };
 
-const random = () => Math.round(Math.random() * 40);
-
-const randomAmount = () => ({ style: {
-  ['--amount']: random() + '%',
-    width: '200px'
-  } });
-
 export default function Home() {
   const { siteConfig } = useDocusaurusContext();
 
@@ -263,11 +256,11 @@ export default function Home() {
 
         <Example />
         <div className={styles.actions}>
-          <Link className="button button--primary button--lg" {...randomAmount()} to="/docs/getting-started">
+          <Link className="button button--primary button--lg" to="/docs/getting-started">
             Get Started
           </Link>
           <Link
-            className="button button--secondary button--lg reverse" {...randomAmount()}
+            className="button button--secondary button--lg reverse"
             href="https://github.com/roypeled/react-logic"
           >
             GitHub
