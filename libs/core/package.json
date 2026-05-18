@@ -1,6 +1,6 @@
 {
   "name": "@react-logic/core",
-  "version": "0.0.1-beta2",
+  "version": "0.0.1-beta3",
   "type": "module",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
