@@ -26,14 +26,12 @@ const config: Config = {
           // can own `/`.
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
-          // Live `docs/` is the in-progress "Next" version. Snapshots in
-          // `versioned_docs/` are cut per major release via
-          // `npm run docs:version <X.0.0>` from this lib.
-          includeCurrentVersion: true,
-          lastVersion: '0.1.1',
-          versions: {
-            current: { label: 'Next', path: 'next' },
-          },
+          // Only published snapshots in `versioned_docs/` appear in the
+          // dropdown. The live `docs/` directory is the working copy used
+          // to cut the next snapshot via `npm run docs:snapshot` from the
+          // repo root, but it isn't served as its own version.
+          includeCurrentVersion: false,
+          lastVersion: '0.1.2',
         },
         blog: false,
         theme: {
