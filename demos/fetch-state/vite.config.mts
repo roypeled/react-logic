@@ -7,5 +7,6 @@ export default defineConfig(() => ({
   server: { port: 4203, host: 'localhost' },
   preview: { port: 4303, host: 'localhost' },
   plugins: [react()],
+  resolve: { conditions: ['@react-logic/source'] },
   build: { outDir: './dist', emptyOutDir: true, reportCompressedSize: true, commonjsOptions: { transformMixedEsModules: true } },
 }));

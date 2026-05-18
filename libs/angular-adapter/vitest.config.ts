@@ -1,6 +1,9 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    conditions: ['@react-logic/source'],
+  },
   test: {
     name: '@react-logic/angular-adapter',
     watch: false,

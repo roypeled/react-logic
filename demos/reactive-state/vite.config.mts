@@ -8,6 +8,7 @@ export default defineConfig(() => ({
   server: { port: 4201, host: 'localhost' },
   preview: { port: 4301, host: 'localhost' },
   plugins: [react()],
+  resolve: { conditions: ['@react-logic/source'] },
   build: {
     outDir: './dist',
     emptyOutDir: true,

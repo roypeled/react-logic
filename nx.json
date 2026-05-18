@@ -53,6 +53,26 @@
       "dependsOn": ["^build"]
     }
   },
+  "release": {
+    "projects": [
+      "@react-logic/core",
+      "@react-logic/state",
+      "@react-logic/di",
+      "@react-logic/utils",
+      "@react-logic/react-logic",
+      "@react-logic/angular-adapter"
+    ],
+    "projectsRelationship": "fixed",
+    "version": {
+      "preVersionCommand": "npx nx run-many -t build",
+      "conventionalCommits": true
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "createRelease": "github"
+      }
+    }
+  },
   "generators": {
     "@nx/react": {
       "application": {

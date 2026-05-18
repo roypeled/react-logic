@@ -1,6 +1,8 @@
 # @react-logic/di
 
-Lightweight dependency injection — `Provider`, `inject`, tokens. One of the three required packages.
+Lightweight dependency injection for React — `Injector`, `inject`, `InjectionToken`, `onDestroy`.
+
+Part of [react-logic](https://github.com/roy-peled_sfrt/react-logic). For the full toolkit in one install, use [`@react-logic/react-logic`](https://npmjs.com/package/@react-logic/react-logic).
 
 ## Install
 
@@ -8,19 +10,37 @@ Lightweight dependency injection — `Provider`, `inject`, tokens. One of the th
 npm install @react-logic/di
 ```
 
-Or pull all required packages in one shot:
+Peer dependency: `react@^18 || ^19`.
 
-```sh
-npm install @react-logic/react-logic
+## Usage
+
+```tsx
+import { Injector, inject } from '@react-logic/di';
+
+class ApiService {
+  fetchUsers() { return fetch('/users').then(r => r.json()); }
+}
+
+class UsersLogic {
+  api = inject(ApiService);
+  load() { return this.api.fetchUsers(); }
+}
+
+export function App() {
+  return (
+    <Injector providers={[ApiService]}>
+      <UsersList />
+    </Injector>
+  );
+}
 ```
 
-## Develop (in this repo)
+- Auto-resolves class providers without manual registration.
+- Override with `{ provide: Token, useClass: ... }` / `useValue` / `useFactory`.
+- `onDestroy(fn)` registers cleanup tied to the surrounding `Injector` (or logic instance).
 
-```sh
-npm install
-npx nx test @react-logic/di        # vitest
-npx nx build @react-logic/di
-npx nx lint @react-logic/di
-```
+See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for full docs and demos.
 
-See the [root README](../../README.md) for the full overview and runnable demos.
+## License
+
+MIT

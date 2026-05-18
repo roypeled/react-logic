@@ -6,7 +6,7 @@ import * as path from 'path';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
-  cacheDir: '../../node_modules/.vite/libs/core',
+  cacheDir: '../../node_modules/.vite/libs/react-logic',
   plugins: [
     react(),
     dts({
@@ -14,12 +14,6 @@ export default defineConfig(() => ({
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
     }),
   ],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //  plugins: [],
-  // },
-  // Configuration for building your library.
-  // See: https://vite.dev/guide/build.html#library-mode
   build: {
     outDir: './dist',
     emptyOutDir: true,
@@ -28,18 +22,20 @@ export default defineConfig(() => ({
       transformMixedEsModules: true,
     },
     lib: {
-      entry: {
-        index: 'src/index.ts',
-        testing: 'src/testing.ts',
-      },
-      name: '@react-logic/core',
+      entry: 'src/index.ts',
+      name: '@react-logic/react-logic',
+      fileName: 'index',
       formats: ['es' as const],
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime', '@react-logic/di'],
-      output: {
-        entryFileNames: '[name].js',
-      },
+      external: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        '@react-logic/core',
+        '@react-logic/state',
+        '@react-logic/di',
+      ],
     },
   },
 }));

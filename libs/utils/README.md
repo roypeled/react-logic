@@ -1,6 +1,12 @@
 # @react-logic/utils
 
-Optional helpers — `asyncState`, `fetchState` (+ verb presets), `formState` / `useForm`. Lives outside the core so the base bundle stays small.
+Optional helpers built on top of [`@react-logic/state`](https://npmjs.com/package/@react-logic/state) and [`@react-logic/di`](https://npmjs.com/package/@react-logic/di):
+
+- `asyncState` — async-seeded signals that re-run on dependency change.
+- `fetchState` + verb presets (`postFetchState`, `putFetchState`, `deleteFetchState`) — reactive HTTP with built-in abort, status, and pluggable transport.
+- `formState` / `formGroup` / `useForm` — schema-driven forms with typed `bind` / `error` proxies and HTML-attr-aware validators.
+
+Part of [react-logic](https://github.com/roy-peled_sfrt/react-logic).
 
 ## Install
 
@@ -8,15 +14,47 @@ Optional helpers — `asyncState`, `fetchState` (+ verb presets), `formState` / 
 npm install @react-logic/utils
 ```
 
-Requires the core packages (install via `@react-logic/react-logic` or individually).
+Peer dependency: `react@^18 || ^19`. Pulls in `@react-logic/state` and `@react-logic/di` transitively.
 
-## Develop (in this repo)
+## Usage
 
-```sh
-npm install
-npx nx test @react-logic/utils     # vitest
-npx nx build @react-logic/utils
-npx nx lint @react-logic/utils
+```ts
+import { fetchState, asyncState } from '@react-logic/utils';
+import { state } from '@react-logic/state';
+
+class UsersLogic {
+  query = state('');
+  users = fetchState(() => `/api/users?q=${this.query()}`);
+  // users() => { loading, data, error, status }
+
+  refetch() { this.users.fetch(); }
+}
 ```
 
-See the [root README](../../README.md) for the full overview and runnable demos.
+```tsx
+import { useForm, formState } from '@react-logic/utils';
+
+class LoginLogic {
+  form = formState({
+    email: { value: '', validators: { required: true, email: true } },
+    password: { value: '', validators: { required: true, minLength: 8 } },
+  });
+}
+
+export function LoginForm() {
+  const logic = useLogic(LoginLogic);
+  const Form = useForm(logic.form);
+  return (
+    <Form>
+      <input {...Form.bind.email} />
+      {Form.error.email.required && <p>Email is required</p>}
+    </Form>
+  );
+}
+```
+
+See the [project README](https://github.com/roy-peled_sfrt/react-logic#readme) for full docs and demos.
+
+## License
+
+MIT
