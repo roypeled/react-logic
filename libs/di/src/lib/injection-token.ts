@@ -1,7 +1,11 @@
+/**
+ * A unique token that can be used in a DI system to provide and inject dependencies.
+ */
 export class InjectionToken<T> {
-    private type:T | null = null;
+    // @ts-expect-error for type inference only
+  private type:T | null = null;
 
-    constructor(public description:string = 'unnamed') {
+    constructor(public description = 'unnamed') {
     }
 
     toString() {

@@ -4,7 +4,16 @@
   "files": [],
   "references": [
     {
-      "path": "./apps/react-logic"
+      "path": "./libs/core"
+    },
+    {
+      "path": "./libs/state"
+    },
+    {
+      "path": "./libs/di"
+    },
+    {
+      "path": "./demo"
     }
   ]
 }

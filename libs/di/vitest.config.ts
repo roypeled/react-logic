@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    name: '@react-logic/core',
+    name: '@react-logic/di',
     watch: false,
     globals: true,
     environment: 'jsdom',

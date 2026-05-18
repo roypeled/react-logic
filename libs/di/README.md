@@ -1,7 +1,7 @@
-# @react-logic/core
+# @react-logic/di
 
 This library was generated with [Nx](https://nx.dev).
 
 ## Running unit tests
 
-Run `nx test @react-logic/core` to execute the unit tests via [Vitest](https://vitest.dev/).
+Run `nx test @react-logic/di` to execute the unit tests via [Vitest](https://vitest.dev/).
