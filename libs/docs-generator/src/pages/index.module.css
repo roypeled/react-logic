@@ -23,9 +23,9 @@
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 50%;
   z-index: -1;
+  width: 100vw;
+  height: 100vh;
 }
 
 .logo {
@@ -112,12 +112,192 @@
   color: var(--ifm-color-primary);
 }
 
-.snippet {
-  width: min(720px, calc(100% - 2rem));
+.exampleWrap {
+  width: min(960px, calc(100% - 2rem));
   margin: 0 auto 1.5rem;
+}
+
+.exampleTabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-family: "SUSE Mono", monospace;
+}
+
+.exampleTab {
+  flex: 1;
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent 50%);
+  color: var(--ifm-color-emphasis-700);
+  border: none;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-align: left;
+  corner-shape: bevel;
+  border-radius: 0;
+  border-top-left-radius: 18px 6px;
+  border-top-right-radius: 6px 22px;
+  border-bottom-left-radius: 22px 6px;
+  border-bottom-right-radius: 6px 18px;
+  transition: color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+.exampleTab:hover {
+  color: var(--ifm-color-emphasis-900);
+}
+
+.exampleTabActive {
+  color: var(--ifm-color-emphasis-1000);
+  background: color-mix(in srgb, var(--ifm-color-primary), transparent 35%);
+  box-shadow: 2px 2px 0 var(--ifm-color-emphasis-1000);
+}
+
+.example {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+@media (max-width: 800px) {
+  .example {
+    grid-template-columns: 1fr;
+  }
+  .exampleTabs {
+    flex-direction: column;
+  }
+}
+
+.snippet {
   text-align: left;
   font-family: "SUSE Mono", monospace;
   position: relative;
+}
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 1rem 0.75rem;
+  font-family: "SUSE Mono", monospace;
+  color: var(--ifm-color-emphasis-900);
+  --snippet-transparent: 0%;
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent var(--snippet-transparent));
+  backdrop-filter: blur(3px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  mask-border:
+    url("https://mdn.github.io/shared-assets/images/examples/mask-border-diamonds.png")
+    30 fill /
+    20px /
+    1px
+    round;
+  mask-border-width: 20px 0 20px 0;
+}
+
+:global([data-theme='dark']) .demo {
+  --snippet-transparent: 50%;
+}
+
+.demoLabel {
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: var(--ifm-color-primary);
+  align-self: flex-start;
+  opacity: 0.8;
+}
+
+.demoButton {
+  font-family: "SUSE Mono", monospace;
+  font-size: 1.05rem;
+  color: var(--ifm-color-emphasis-900);
+  background: var(--ifm-color-primary);
+  border: none;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  corner-shape: bevel;
+  border-radius: 0;
+  border-top-left-radius: 15px 10px;
+  border-top-right-radius: 10px 30px;
+  border-bottom-left-radius: 10px 30px;
+  border-bottom-right-radius: 15px 10px;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.demoButton:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 var(--ifm-color-emphasis-1000);
+}
+
+.demoButton:active {
+  transform: translate(1px, 1px);
+}
+
+.demoHint {
+  font-size: 0.7rem;
+  color: var(--ifm-color-emphasis-700);
+  opacity: 0.7;
+}
+
+.demoValue {
+  font-family: "SUSE Mono", monospace;
+  font-size: 1.05rem;
+  color: var(--ifm-color-emphasis-900);
+}
+
+.demoInput {
+  font-family: "SUSE Mono", monospace;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent 60%);
+  border: 1px solid color-mix(in srgb, var(--ifm-color-primary), transparent 60%);
+  color: var(--ifm-color-emphasis-1000);
+  width: 100%;
+  box-sizing: border-box;
+  corner-shape: bevel;
+  border-radius: 0;
+  border-top-left-radius: 12px 6px;
+  border-top-right-radius: 6px 16px;
+  border-bottom-left-radius: 6px 16px;
+  border-bottom-right-radius: 12px 6px;
+  outline: none;
+}
+
+.demoInput:focus {
+  border-color: var(--ifm-color-primary);
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent 30%);
+}
+
+.demoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: "SUSE Mono", monospace;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-900);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.demoList li::before {
+  content: '> ';
+  color: var(--ifm-color-primary);
+  opacity: 0.7;
+}
+
+.demoEmpty {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.demoEmpty::before {
+  content: '' !important;
 }
 
 /* Torn zigzag mask: ~10px teeth along the top and bottom edges. The horizontal

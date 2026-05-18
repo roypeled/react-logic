@@ -1,4 +1,5 @@
-import { useId, useMemo } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 /* =========================================================================
  *  Y2K Tech-Grunge Background — React component (background only).
@@ -312,8 +313,8 @@ function GrungeSVG({ params, seed, className, animate = true }: GrungeSVGProps &
   return (
     <svg
       className={className}
-      width="100%"
-      height="100%"
+      width={width}
+      height={height}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid slice"
       xmlns="http://www.w3.org/2000/svg"
@@ -893,15 +894,80 @@ export default function GrungeBackground({
 
 /**
  * Bare SVG variant — drop into an existing relatively-positioned container.
+ *
+ * The SVG renders at its intrinsic `width × height` pixel dimensions (default
+ * 1600 × 900). Filter pixel buffers stay constant regardless of viewport
+ * size — keeps the warp filter from flickering on large/4K displays where
+ * device-pixel-sized buffers + SMIL animation overwhelm the GPU pipeline.
+ *
+ * CSS is responsible for scaling the SVG to fit the layout, e.g.:
+ * ```css
+ * .grungeBg {
+ *   position: fixed;
+ *   inset: 0 0 50% 0;
+ *   transform-origin: top left;
+ *   transform: scale(calc(100vw / 1600));
+ * }
+ * ```
  */
 export function GrungeBackgroundOnly({
                                        seed = 42 * Math.random(),
-                                       width = 1600,
-                                       height = 900,
+                                       width = 640,
+                                       height = 480,
                                        className,
                                        animate = true,
+                                       raster = false,
                                        ...overrides
-                                     }: Partial<GrungeParams> & { seed?: number, className?:string, animate?: boolean } = {}) {
+                                     }: Partial<GrungeParams> & {
+                                       seed?: number;
+                                       className?: string;
+                                       animate?: boolean;
+                                       /** When true, render the SVG via an `<object>` loaded from a
+                                        *  blob URL. The browser treats `<object>` as a replaced
+                                        *  element with its own compositor layer — CSS transforms
+                                        *  GPU-scale the rasterized bitmap instead of re-rasterizing
+                                        *  the vector at the post-transform size. Animations keep
+                                        *  running because `<object>` is a nested browsing context
+                                        *  (unlike `<img>` which strips them). */
+                                       raster?: boolean;
+                                     } = {}) {
   const params: GrungeParams = { ...DEFAULTS, width, height, ...overrides };
+
+  // The blob URL is created once on mount and never recreated. React renders
+  // shouldn't touch the `<object>` — its inner SVG is a separate document
+  // that runs its own SMIL clock. If the URL changed, the browser would
+  // reload the SVG and reset all animation state.
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!raster) return;
+    const markup = renderToStaticMarkup(
+      <GrungeSVG params={params} seed={seed} animate={animate} />
+    );
+    const url = URL.createObjectURL(
+      new Blob([markup], { type: 'image/svg+xml' })
+    );
+    setBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+    // Intentionally empty deps — create the blob exactly once per mount and
+    // ignore prop churn afterwards. Remount the component (new React key) to
+    // change seed/palette at runtime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (raster && blobUrl) {
+    return (
+      <object
+        className={className}
+        data={blobUrl}
+        type="image/svg+xml"
+        width={width}
+        height={height}
+        aria-hidden="true"
+        style={{ pointerEvents: 'none' }}
+      />
+    );
+  }
+
   return <GrungeSVG params={params} seed={seed} className={className} animate={animate} />;
 }

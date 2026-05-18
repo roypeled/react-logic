@@ -1,0 +1,20 @@
+[
+  { "id": 1, "name": "state" },
+  { "id": 2, "name": "computedState" },
+  { "id": 3, "name": "asyncState" },
+  { "id": 4, "name": "effect" },
+  { "id": 5, "name": "useLogic" },
+  { "id": 6, "name": "useInjector" },
+  { "id": 7, "name": "inject" },
+  { "id": 8, "name": "onDestroy" },
+  { "id": 9, "name": "Injector" },
+  { "id": 10, "name": "InjectionToken" },
+  { "id": 11, "name": "DIAdapter" },
+  { "id": 12, "name": "setDIAdapter" },
+  { "id": 13, "name": "getDIAdapter" },
+  { "id": 14, "name": "createAngularAdapter" },
+  { "id": 15, "name": "resetDefaultAdapterScopes" },
+  { "id": 16, "name": "installViteHMR" },
+  { "id": 17, "name": "createTestInjectionScope" },
+  { "id": 18, "name": "flushAsyncSignals" }
+]
