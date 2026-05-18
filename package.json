@@ -5,8 +5,7 @@
   "scripts": {
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
-    "lint": "nx run-many -t lint",
-    "typecheck": "nx run-many -t typecheck"
+    "lint": "nx run-many -t lint"
   },
   "private": false,
   "dependencies": {

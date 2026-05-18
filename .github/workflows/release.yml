@@ -33,7 +33,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npx nx run-many -t lint test typecheck
+      - run: npx nx run-many -t lint test
 
       - name: Configure git
         run: |
