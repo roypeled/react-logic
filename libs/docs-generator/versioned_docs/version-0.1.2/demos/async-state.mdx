@@ -1,0 +1,55 @@
+---
+sidebar_position: 3
+---
+
+import SourceLink from '@site/src/components/SourceLink';
+
+# Async state — demo
+
+User profile that re-fetches automatically whenever the selected userId changes. Shows how `asyncState` wires reactive dependencies into an async producer.
+
+## What it shows
+
+- A `userId = state(1)` signal.
+- A `profile = asyncState(async () => …)` that reads `userId` inside the producer — `asyncState` tracks the read, re-runs on change.
+- Companion `loading` / `error` signals updated inside the producer (`asyncState` only models the value; surrounding state is yours).
+- A simple `<select>` swap demonstrates the auto-refetch with no `useEffect` or dep array.
+
+## The logic
+
+```ts
+import { state } from '@react-logic/react-logic';
+import { asyncState } from '@react-logic/utils';
+
+class ProfileLogic {
+  userId  = state(1);
+  loading = state(false);
+  error   = state<string | null>(null);
+
+  profile = asyncState(async () => {
+    const id = this.userId();
+    this.loading(true);
+    this.error(null);
+    try {
+      const r = await fetch(`https://jsonplaceholder.typicode.com/users/${id}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      this.error(String(e));
+      return null;
+    } finally {
+      this.loading(false);
+    }
+  });
+}
+```
+
+For HTTP-shaped fetching with built-in loading/error/status, see the [Fetch state demo](./fetch-state.mdx).
+
+## Run it
+
+```sh
+nx serve demo-async-state
+```
+
+<SourceLink path="demos/async-state">View source on GitHub →</SourceLink>

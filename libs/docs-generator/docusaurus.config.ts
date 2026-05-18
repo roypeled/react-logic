@@ -26,6 +26,14 @@ const config: Config = {
           // can own `/`.
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
+          // Live `docs/` is the in-progress "Next" version. Snapshots in
+          // `versioned_docs/` are cut per major release via
+          // `npm run docs:version <X.0.0>` from this lib.
+          includeCurrentVersion: true,
+          lastVersion: '0.1.1',
+          versions: {
+            current: { label: 'Next', path: 'next' },
+          },
         },
         blog: false,
         theme: {
@@ -103,6 +111,7 @@ const config: Config = {
       logo: { alt: 'react-logic', src: 'img/logo.svg' },
       items: [
         { type: 'docSidebar', sidebarId: 'mainSidebar', position: 'left', label: 'Docs' },
+        { type: 'docsVersionDropdown', position: 'right' },
         { href: 'https://www.npmjs.com/package/@react-logic/react-logic', label: 'npm', position: 'right' },
         { href: 'https://github.com/roypeled/react-logic', label: 'GitHub', position: 'right' },
       ],

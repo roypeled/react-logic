@@ -1,0 +1,54 @@
+---
+sidebar_position: 2
+---
+
+import SourceLink from '@site/src/components/SourceLink';
+
+# Reactive state — demo
+
+Counter with `state`, `computedState`, `effect`, and `onDestroy` working together. Demonstrates the four pieces every reactive logic class uses.
+
+## What it shows
+
+- A `count` signal updated by +, −, and Reset buttons.
+- A `doubled` `computedState` derived from `count` — memoised, no manual subscription.
+- An `effect` that persists `count` to `localStorage` on every change. Reload the page; the value survives.
+- A side clock driven by `setInterval`, cleaned up via `onDestroy` on unmount.
+
+## The logic
+
+```ts
+import {
+  computedState,
+  effect,
+  onDestroy,
+  state,
+} from '@react-logic/react-logic';
+
+class CounterLogic {
+  count = state(Number(localStorage.getItem('count') ?? 0));
+  doubled = computedState(() => this.count() * 2);
+  now = state(Date.now());
+
+  constructor() {
+    effect(() => localStorage.setItem('count', String(this.count())));
+
+    const id = setInterval(() => this.now(Date.now()), 1000);
+    onDestroy(() => clearInterval(id));
+  }
+
+  inc()   { this.count(this.count() + 1); }
+  dec()   { this.count(this.count() - 1); }
+  reset() { this.count(0); }
+}
+```
+
+The React component does nothing but read signals and wire button clicks. `useLogic` handles the subscription.
+
+## Run it
+
+```sh
+nx serve demo-reactive-state
+```
+
+<SourceLink path="demos/reactive-state">View source on GitHub →</SourceLink>
