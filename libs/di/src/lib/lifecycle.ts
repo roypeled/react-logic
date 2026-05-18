@@ -1,52 +1,20 @@
-/**
- * A list of destroy callbacks belonging to a single construction scope.
- */
-export type DestroySink = Array<() => void>;
-
-const sinkStack: DestroySink[] = [];
+import './default-adapter';
+import { getDIAdapter } from './adapter';
 
 /**
- * Opens a new destroy sink. Subsequent `onDestroy` calls within the same
- * synchronous construction will register into this sink. Must be paired with
- * `popDestroySink`. Internal API — callers are `useLogic` (logic class scope)
- * and `InjectionContextInstance` (per-service scope).
- */
-export const pushDestroySink = (): DestroySink => {
-  const sink: DestroySink = [];
-  sinkStack.push(sink);
-  return sink;
-};
-
-/**
- * Closes the topmost destroy sink. Returns the sink that was just closed.
- */
-export const popDestroySink = (): DestroySink | undefined => sinkStack.pop();
-
-/**
- * Runs every callback in the sink in reverse-registration order, swallowing
- * and logging individual failures so one bad cleanup doesn't block others.
- */
-export const runDestroySink = (sink: DestroySink) => {
-  for (let i = sink.length - 1; i >= 0; i--) {
-    try {
-      sink[i]();
-    } catch (e) {
-      console.error('onDestroy callback threw:', e);
-    }
-  }
-  sink.length = 0;
-};
-
-/**
- * Registers a callback to run when the surrounding construction scope is torn
- * down. Must be called synchronously during a logic class or DI-managed
- * service constructor (or as a field initializer). Throws otherwise.
+ * Register a callback to run when the surrounding construction scope is torn
+ * down. Must be called synchronously during a logic class or service
+ * constructor (or as a field initializer). Throws otherwise.
  *
+ * For logic classes, the callback fires when the consuming component
+ * unmounts. For services constructed via DI, it fires when the providing
+ * `<Injector>` unmounts.
+ *
+ * @category Functions
  * @example
  * ```ts
  * class TimeService {
- *   timer = state(null as ReturnType<typeof setInterval> | null);
- *
+ *   timer = state<ReturnType<typeof setInterval> | null>(null);
  *   constructor() {
  *     onDestroy(() => {
  *       const t = this.timer();
@@ -56,12 +24,6 @@ export const runDestroySink = (sink: DestroySink) => {
  * }
  * ```
  */
-export const onDestroy = (fn: () => void) => {
-  const sink = sinkStack.at(-1);
-  if (!sink) {
-    throw new Error(
-      'onDestroy() must be called during logic class or injected service construction'
-    );
-  }
-  sink.push(fn);
+export const onDestroy = (fn: () => void): void => {
+  getDIAdapter().onDestroy(fn);
 };

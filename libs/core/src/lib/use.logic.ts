@@ -1,25 +1,36 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { effect, effectScope, isComputed, isSignal, signal } from 'alien-signals';
-import {
-  collectInjectedInstances,
-  getGlobalContext,
-  InjectionContext,
-  popDestroySink,
-  pushDestroySink,
-  runDestroySink,
-  setInjectionLifecycleContext
-} from '@react-logic/di';
+import { getDIAdapter, useCurrentScope } from '@react-logic/di';
 
 let instanceTracker = 0;
 
+/**
+ * Symbol attached by `useLogic` to every constructed logic instance, holding
+ * a monotonic per-process id. Useful for correlating debug logs across the
+ * lifetime of an instance (constructor, signal updates, cleanup) since the
+ * class itself doesn't otherwise carry an identity for the same render.
+ *
+ * Treat as read-only. Not part of stable user API; exposed for debugging.
+ *
+ * @category Internal
+ */
 export const INSTANCE_ID_SYMBOL = Symbol('InstanceId');
 
 /**
- * Type representing a class constructor for a logic class.
+ * Constructor signature accepted by `useLogic`.
+ *
+ * Logic classes are constructed by the framework with no arguments — any
+ * dependencies are pulled in via `inject()` calls inside the constructor or
+ * field initializers. The variadic parameter type is for TypeScript variance
+ * convenience, not because positional arguments are supported.
+ *
+ * @typeParam T - The instance type the logic class produces. Constrained to
+ *   `object` so primitive returns aren't accepted.
+ * @category Types
  */
 export type LogicClass<T extends object> = new (...args: any[]) => T;
 
-type Signal<T = unknown> = typeof signal<T>
+type Signal<T = unknown> = typeof signal<T>;
 
 type LogicInstance<T extends object> = T & { [INSTANCE_ID_SYMBOL]: number };
 
@@ -28,7 +39,11 @@ const isFunctionForSignal = (value: any): boolean => {
   return isSignal(value) || isComputed(value);
 };
 
-const createLogicInstance = <T extends object>(logicClass: LogicClass<T>, effectHandler: (i: LogicInstance<T>) => void) => {
+const createLogicInstance = <T extends object>(
+  logicClass: LogicClass<T>,
+  scope: unknown,
+  effectHandler: (i: LogicInstance<T>) => void
+) => {
   const instanceId = instanceTracker++;
   console.debug(`Creating logic instance for ${logicClass.name}@${instanceId}`);
 
@@ -44,40 +59,36 @@ const createLogicInstance = <T extends object>(logicClass: LogicClass<T>, effect
 
   let instance!: LogicInstance<T>;
   let injectedInstances: unknown[] = [];
+  let disposeUserDestroys: () => void = () => undefined;
 
-  // Sink captures `onDestroy` callbacks registered during the logic class
-  // constructor (and field initializers). Service-construction `onDestroy`
-  // calls land in the DI context's per-service sink, not this one.
-  const destroySink = pushDestroySink();
-
-  // The scope wraps both the constructor and the tracking effect so that any
+  // The effectScope wraps both the constructor and the tracking effect so any
   // `effect()` the user creates in the constructor is captured and disposed
   // together with everything else when the logic instance is torn down.
   const cleanupSignals = effectScope(() => {
-    const getInstances = collectInjectedInstances();
+    const adapter = getDIAdapter();
+    const built = adapter.construct(scope, () => new logicClass() as LogicInstance<T>);
 
-    try {
-      instance = new logicClass() as LogicInstance<T>;
-    } finally {
-      popDestroySink();
-    }
+    instance = built.result;
     instance[INSTANCE_ID_SYMBOL] = instanceId;
-
-    injectedInstances = getInstances();
+    injectedInstances = built.injected;
+    disposeUserDestroys = built.dispose;
 
     effect(() => {
-      injectedInstances.forEach(i => runSignalsInInstance(i));
+      injectedInstances.forEach((i) => runSignalsInInstance(i));
       runSignalsInInstance(instance);
       // Run the effect handler in a separate tick to ensure all signals are updated, but not in the same effect cycle
       setTimeout(() => effectHandler(instance));
     });
   });
 
-  return { rootInstance: instance, cleanupSignals, destroySink, instanceId };
+  return { rootInstance: instance, cleanupSignals, disposeUserDestroys, instanceId };
 };
 
 /**
  * A React hook to use a logic class with dependency injection and state management.
+ *
+ * @typeParam T - The logic-class instance type. Inferred from `logicClass`.
+ * @category Hooks
  * @param logicClass - The logic class to instantiate and manage.
  * @param cleanup - An optional cleanup function to run when the component unmounts, receiving the logic instance.
  * @returns The instance of the logic class.
@@ -100,32 +111,29 @@ const createLogicInstance = <T extends object>(logicClass: LogicClass<T>, effect
  * }
  * ```
  */
-export const useLogic = <T extends object>(logicClass: LogicClass<T>, cleanup?: (instance: LogicInstance<T>) => void) => {
-  const injector = useContext(InjectionContext) ?? getGlobalContext();
+export const useLogic = <T extends object>(
+  logicClass: LogicClass<T>,
+  cleanup?: (instance: LogicInstance<T>) => void
+) => {
+  const scope = useCurrentScope();
   const [stateInstance, setStateInstance] = useState<{ i: LogicInstance<T> } | undefined>();
 
-  const { rootInstance, cleanupSignals, destroySink, instanceId } = useMemo(() => {
-    const stopInjectionContext = setInjectionLifecycleContext(injector);
-
-    const res = createLogicInstance(logicClass, (i) => {
+  const { rootInstance, cleanupSignals, disposeUserDestroys, instanceId } = useMemo(() => {
+    return createLogicInstance(logicClass, scope, (i) => {
       setStateInstance({ i });
     });
-
-    stopInjectionContext();
-
-    return res;
-  }, [logicClass, injector]);
+  }, [logicClass, scope]);
 
   useEffect(() => {
     return () => {
       console.debug(`Cleaning up logic instance for ${logicClass.name}@${instanceId}`);
       cleanupSignals();
-      runDestroySink(destroySink);
+      disposeUserDestroys();
       if (cleanup) {
         cleanup(rootInstance);
       }
     };
-  }, [cleanup, cleanupSignals, destroySink, rootInstance, instanceId, logicClass]);
+  }, [cleanup, cleanupSignals, disposeUserDestroys, rootInstance, instanceId, logicClass]);
 
   return stateInstance?.i ?? rootInstance;
 };

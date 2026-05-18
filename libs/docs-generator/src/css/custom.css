@@ -1,0 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,slnt,wdth,wght,GRAD,XOPQ,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC@8..144,-10..0,25..151,100..1000,-133,27..175,323..603,79,649..854,-305..-98,738,416..570,528..760&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+body {
+  font-family: "Roboto Flex", sans-serif;
+  font-optical-sizing: auto;
+
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+
+  &::selection {
+    background: var(--ifm-color-primary);
+    color: var(--ifm-color-emphasis-100);
+  }
+}
+
+@function --lighten(--color, --amount) {
+ result: oklch(from var(--color) calc(l * (1 + var(--amount))) c h);
+}
+
+.navbar {
+  mask-border:
+    url("https://mdn.github.io/shared-assets/images/examples/mask-border-diamonds.png")
+    30 fill /        /* slice */
+    20px /           /* width */
+    1px              /* outset */
+    round;           /* repeat */
+  mask-border-width: 0 0 20px;
+  --ifm-navbar-height: 5rem;
+  padding-bottom: 5px;
+}
+
+.navbar__title {
+  font-size: 1.5rem;
+}
+
+.navbar__logo {
+  color: var(--ifm-color-primary);
+}
+
+.button {
+  background-color: var(--ifm-color-primary-light);
+
+  &:hover {
+  background-color: var(--ifm-color-primary-lightest);
+  }
+}
+
+.button--secondary {
+  background-color: var(--ifm-color-emphasis-900);
+
+  &:hover {
+    background-color: var(--ifm-color-emphasis-1000);
+  }
+}
+
+.button.button--secondary {
+  color: var(--ifm-color-emphasis-100);
+}
+
+.button--lg {
+  anchor-name: --button;
+  transition: all 300ms;
+  --ifm-button-size-multiplier: 1.6;
+  padding-left: 0;
+  padding-right: 0;
+  border-radius: 0;
+  anchor-scope: all;
+  align: center;
+  border:0;
+
+  background: transparent;
+
+  &.button--primary::after {
+    background: var(--ifm-color-primary-light);
+  }
+
+  &.button--secondary::after {
+    background: var(--ifm-color-emphasis-900);
+  }
+
+
+  &::after{
+    opacity: 0.8;
+    transition: all 300ms;
+    content: '';
+    background: inherit;
+    position-anchor: --button;
+    position: fixed;
+    left: anchor(left);
+    right: anchor(right);
+    top: anchor(top);
+    height: 1000000px;
+    z-index: -1;
+    /*mask-image: linear-gradient(to bottom, black 20%, rgba(0,0,0,.2));*/
+
+    mask-border:
+      url("https://mdn.github.io/shared-assets/images/examples/mask-border-diamonds.png")
+      30 fill /        /* slice */
+      20px /           /* width */
+      1px              /* outset */
+      round;           /* repeat */
+    mask-border-width: 0 20px 0 20px;
+  }
+
+  font-variation-settings:
+    "GRAD" 150, "XOPQ" 175, "XTRA" 407, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 470, "YTUC" 760, "wght" 200, "wdth" 117, "slnt" -10
+;
+
+  &:hover {
+    background: transparent;
+
+    font-variation-settings:
+      "slnt" 0, "GRAD" 150, "XOPQ" 128, "XTRA" 603, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 570, "YTUC" 760, "wght" 200, "wdth" 117, "slnt" 0
+  ;
+    &::after {
+      opacity: 1;
+    }
+    &.button--primary::after {
+      background: var(--ifm-color-primary-lighter);
+    }
+
+    &.button--secondary::after {
+      background: var(--ifm-color-emphasis-1000);
+    }
+
+  }
+}
+
+h1, h2, h3, h4, h5, h6, em, .navbar__brand {
+  font-style: normal;
+  transition: all 300ms;
+  font-variation-settings:
+    "GRAD" 150, "XOPQ" 175, "XTRA" 407, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 470, "YTUC" 760, "wght" 200, "wdth" 117, "slnt" -10
+;
+
+  &:hover {
+    font-variation-settings:
+      "GRAD" -200, "XOPQ" 175, "XTRA" 407, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 470, "YTUC" 760, "wght" 300, "wdth" 117, "slnt" -5
+  ;
+  }
+}
+
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+
+  --ifm-font-family-base: "Roboto Flex", sans-serif;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+}
+
+/* "Defined in: lib/.../file.ts:12" — wrapped by ./typedoc-plugin.mjs.
+   Treat as a small caption rather than body text. */
+.api-sources {
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600);
+  font-family: var(--ifm-font-family-monospace);
+  margin: 0.25rem 0 1rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--ifm-color-emphasis-300);
+}
+
+/* "Imported from `@react-logic/...`" — emitted by ./typedoc-plugin.mjs.
+   Sits right under the page title to anchor the export to its package. */
+.api-package {
+  display: inline-block;
+  margin: 0.25rem 0 1.25rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  color: var(--ifm-color-emphasis-800);
+}
+
+.api-package code {
+  background: transparent;
+  padding: 0;
+  border: none;
+  font-weight: 600;
+}

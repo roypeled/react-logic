@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "../di/src/index.ts",
+    "../core/src/index.ts",
+    "../state/src/index.ts",
+    "../angular-adapter/src/index.ts",
+    "../di/src/lib/**/*.ts",
+    "../di/src/lib/**/*.tsx",
+    "../core/src/lib/**/*.ts",
+    "../core/src/lib/**/*.tsx",
+    "../state/src/lib/**/*.ts",
+    "../angular-adapter/src/lib/**/*.ts"
+  ],
+  "exclude": ["**/*.spec.ts", "**/*.spec.tsx"]
+}

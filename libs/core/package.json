@@ -11,11 +11,18 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "import": "./src/testing.ts",
+      "default": "./src/testing.ts"
     }
   },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
+  "dependencies": {
     "alien-signals": "^3.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
   },
   "publishConfig": {
     "access": "public"

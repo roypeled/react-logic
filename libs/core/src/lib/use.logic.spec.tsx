@@ -1,8 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { effect } from 'alien-signals';
 import { inject, InjectionToken, Injector, onDestroy } from '@react-logic/di';
-import { computedState, state } from '@react-logic/state';
+import { computedState, effect, state } from '@react-logic/state';
 import { useLogic } from './use.logic';
 
 beforeEach(() => {
@@ -461,6 +460,55 @@ describe('useLogic — auto-tracked effects', () => {
     r.n(2);
     await awaitTimeout(0);
     expect(seen).toEqual([0, 1]);
+  });
+
+  it('runs the effect cleanup on unmount', async () => {
+    const cleanup = vi.fn();
+    class Logic {
+      constructor() {
+        effect(() => cleanup);
+      }
+    }
+    const Comp = () => {
+      useLogic(Logic);
+      return null;
+    };
+
+    const { unmount } = render(<Comp />);
+    expect(cleanup).not.toHaveBeenCalled();
+    unmount();
+    expect(cleanup).toHaveBeenCalledOnce();
+  });
+
+  it('runs the cleanup before each re-run inside a logic class', async () => {
+    const events: string[] = [];
+    class Logic {
+      n = state(0);
+      constructor() {
+        effect(() => {
+          const v = this.n();
+          events.push(`run:${v}`);
+          return () => events.push(`cleanup:${v}`);
+        });
+      }
+    }
+    let r!: Logic;
+    const Comp = () => {
+      r = useLogic(Logic);
+      return null;
+    };
+
+    const { unmount } = render(<Comp />);
+    expect(events).toEqual(['run:0']);
+
+    await act(async () => {
+      r.n(1);
+      await tick();
+    });
+    expect(events).toEqual(['run:0', 'cleanup:0', 'run:1']);
+
+    unmount();
+    expect(events.at(-1)).toBe('cleanup:1');
   });
 });
 

@@ -1,42 +1,35 @@
-import {getInjectionLifecycleContext} from "./injection-context";
-import {InjectionType} from "./types";
+import './default-adapter';
+import { InjectionType } from './types';
+import { getDIAdapter } from './adapter';
 
 type Optional = { optional: true };
 type NotOptional = { optional?: false };
 
-/**
- * Injection options for the `inject` function.
- * @property optional - If true, the injection will return null if the dependency is not found.
- */
 export type InjectOptions = Optional | NotOptional;
 
-type ValueByOptions<T, O extends InjectOptions | undefined> = O extends undefined ? T : O extends Optional ? T | null : T;
+type ValueByOptions<T, O extends InjectOptions | undefined> =
+  O extends undefined ? T : O extends Optional ? T | null : T;
 
 type InjectFn = {
-    <T>(token: InjectionType<T>): T;
-    <T, O extends InjectOptions>(token: InjectionType<T>, options:O): ValueByOptions<T,O>;
-}
+  <T>(token: InjectionType<T>): T;
+  <T, O extends InjectOptions>(token: InjectionType<T>, options: O): ValueByOptions<T, O>;
+};
 
 /**
- * Inject a dependency from the current injection context.
- * To be used inside logic classes or other injected constructs.
- * @param token - The injection token or class to resolve.
- * @param options - Optional injection options.
- * @returns The resolved dependency instance.
+ * Inject a dependency from the current injection context. Must be called
+ * synchronously during a logic class or service constructor.
+ *
+ * @typeParam T - The type the token resolves to.
+ * @typeParam O - The options shape. When `{ optional: true }`, the return
+ *   type widens to `T | null`; otherwise it's `T`.
+ * @category Functions
  * @example
  * ```ts
- * class MyService {
- *   constructor() {
- *     // ...
- *   }
- * }
- *
  * class MyLogic {
- *   myService = inject(MyService)
+ *   service = inject(MyService);
  * }
  * ```
  */
-export const inject:InjectFn = (token:InjectionType<unknown>, options?:InjectOptions) => {
-    const injector = getInjectionLifecycleContext();
-    return injector.get(token, options?.optional);
-}
+export const inject: InjectFn = ((token: InjectionType<unknown>, options?: InjectOptions) => {
+  return getDIAdapter().inject(token, options?.optional ?? false);
+}) as InjectFn;

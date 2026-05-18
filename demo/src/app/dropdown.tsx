@@ -1,7 +1,7 @@
 import { useLogic } from '@react-logic/core';
 import { computedState, state } from '@react-logic/state';
 import React, { useEffect, useRef } from 'react';
-import { effect } from 'alien-signals';
+import { effect } from '@react-logic/state';
 
 const list = [
   { id: '1', label: 'Apple' },

@@ -1,0 +1,43 @@
+{
+  "name": "docs-generator",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/docs-generator/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/docs"],
+      "inputs": [
+        "{projectRoot}/docs/**/*",
+        "{projectRoot}/src/**/*",
+        "{projectRoot}/static/**/*",
+        "{projectRoot}/docusaurus.config.ts",
+        "{projectRoot}/sidebars.ts",
+        "{workspaceRoot}/libs/**/src/**/*.ts",
+        "{workspaceRoot}/libs/**/src/**/*.tsx",
+        "!{workspaceRoot}/libs/**/*.spec.ts",
+        "!{workspaceRoot}/libs/**/*.spec.tsx",
+        {
+          "externalDependencies": [
+            "@docusaurus/core",
+            "@docusaurus/preset-classic",
+            "docusaurus-plugin-typedoc",
+            "typedoc"
+          ]
+        }
+      ],
+      "options": {
+        "command": "docusaurus build --out-dir ../../docs",
+        "cwd": "libs/docs-generator"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docusaurus start --port 3000",
+        "cwd": "libs/docs-generator"
+      },
+      "continuous": true
+    }
+  }
+}

@@ -1,0 +1,176 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 5rem 1.5rem 6rem;
+  gap: 1.25rem;
+
+  &::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, color(from var(--ifm-color-primary-lightest) srgb r g b / .5) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+.grungeBg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 50%;
+  z-index: -1;
+}
+
+.logo {
+  width: 150px;
+  height: 150px;
+  background-color: var(--ifm-color-gray-100);
+  border-radius: 50%;
+  mask: url('/img/logo-mask.svg') no-repeat center / contain;
+  mask-mode: luminance;
+  position: relative;
+  anchor-name: --logo;
+  z-index: 1;
+}
+
+.logoBg {
+  position-anchor: --logo;
+  position: fixed;
+  top: calc(anchor(
+  top) + 63px);
+  left: calc(anchor(
+  left) + 23px);
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: var(--ifm-color-primary-lightest);
+  transform: skew(305deg, 15deg);
+}
+
+.title {
+  z-index: 1;
+
+
+  font-size: 3.5rem;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ifm-color-gray-100);
+  text-shadow: 3px 3px 0px black;
+}
+
+.tagline {
+  font-family: "SUSE Mono", sans-serif;
+
+  font-size: 1.4rem;
+  margin: 0;
+  color: var(--ifm-color-emphasis-900);
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent 50%);
+  padding: 0.5rem 5em;
+  corner-shape: bevel;
+  border-radius:0;
+  border-top-left-radius: 15px 10px;
+  border-top-right-radius: 10px 30px;
+  border-bottom-left-radius: 10px 30px;
+  border-bottom-right-radius: 15px 10px;
+
+  em {
+    font-family: "Roboto Flex", sans-serif;
+  }
+}
+
+.features {
+  font-family: "SUSE Mono", sans-serif;
+
+  color: var(--ifm-color-emphasis-900);
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent 50%);
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  padding: 0.5rem 5em;
+  corner-shape: bevel;
+  border-radius:0;
+  border-top-left-radius: 26px 100%;
+  border-top-right-radius: 10px 30px;
+  border-bottom-left-radius: 10px 30px;
+  border-bottom-right-radius: 26px 100%;
+}
+
+.features li::before {
+  content: '— ';
+  color: var(--ifm-color-primary);
+}
+
+.snippet {
+  width: min(720px, calc(100% - 2rem));
+  margin: 0 auto 1.5rem;
+  text-align: left;
+  font-family: "SUSE Mono", monospace;
+  position: relative;
+}
+
+/* Torn zigzag mask: ~10px teeth along the top and bottom edges. The horizontal
+   linear-gradient cuts the teeth; the vertical limits them to the edges only. */
+.snippet :global(.theme-code-block) {
+  --tooth: 10px;
+  /* Dark mode: 50% see-through so grunge bleeds. Light mode: fully opaque so
+     code stays readable against the busier background. */
+  --snippet-transparent: 10%;
+  text-shadow: var(--ifm-color-emphasis-100) 1px 1px 2px;
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent var(--snippet-transparent));
+  backdrop-filter: blur(3px);
+  border: none;
+  border-radius: 0;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  mask-border:
+    url("https://mdn.github.io/shared-assets/images/examples/mask-border-diamonds.png")
+    30 fill /        /* slice */
+    20px /           /* width */
+    1px              /* outset */
+    round;           /* repeat */
+  mask-border-width: 20px 0 20px 0;
+  padding-top: calc(var(--tooth) + 0.4rem);
+  padding-bottom: calc(var(--tooth) + 0.4rem);
+}
+
+:global([data-theme='dark']) .snippet :global(.theme-code-block) {
+  --snippet-transparent: 50%;
+}
+
+.snippet :global(.theme-code-block) pre,
+.snippet :global(.theme-code-block) code {
+  background: transparent !important;
+  font-family: "SUSE Mono", monospace !important;
+  font-size: 0.92rem;
+}
+
+.snippet :global(.theme-code-block) :global(.prism-code) {
+  background: transparent !important;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .title {
+    font-size: 2.5rem;
+  }
+  .tagline {
+    font-size: 1.15rem;
+  }
+}

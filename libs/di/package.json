@@ -13,8 +13,10 @@
       "default": "./src/index.ts"
     }
   },
+  "dependencies": {
+    "alien-signals": "^3.0.0"
+  },
   "peerDependencies": {
-    "alien-signals": "^3.0.0",
     "react": "^18.0.0 || ^19.0.0"
   },
   "publishConfig": {
