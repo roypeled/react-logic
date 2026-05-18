@@ -3,9 +3,8 @@ import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Layout from '@theme/Layout';
-import { useLogic } from '@react-logic/core';
-import { inject } from '@react-logic/di';
-import { asyncState, computedState, state } from '@react-logic/state';
+import { computedState, inject, state, useLogic } from '@react-logic/react-logic';
+import { fetchState } from '@react-logic/utils';
 import styles from './index.module.css';
 import { GrungeBackgroundOnly } from './GrungeBackground';
 import { GrungeCanvas } from '../components/GrungeCanvas';
@@ -16,35 +15,49 @@ const features = [
   'Shared functionality with dependency injection'
 ];
 
-const SNIPPET_LOGIC = `class ItemsService {
-  items = asyncState(() => fetch('/items.json').then(r => r.json());
+const currentYear = new Date().getFullYear();
+const YEARS = new Array(5).fill(0).map((_, i) => currentYear - i).reverse();
+const defaultYear = YEARS.at(-1) ?? currentYear;
+
+const SNIPPET_LOGIC = `// Top Wikipedia articles for a chosen year in a specific day
+
+class ItemsService {
+  data = fetchState((year = '${defaultYear}') => getUrl(year));
+
+  items = computedState(() => this.data()?.items.at(0)?.articles ?? []);
 }
 
 class ItemsLogic {
   service = inject(ItemsService);
-  query = state('');
-  regex = computedState(() => new RegExp(this.query(), 'i'));
-  filtered = computedState(() => {
-    const items = this.service.items();
-    const regex = this.regex();
-    if (!items) return [];
-    return items.filter(i => regex.test(i.name));
+
+  filtered = computedState((q = '') => {
+    const gx = new RegExp(q, 'i');
+    return this.service.items().filter(a => gx.test(a.article));
   });
 }
 
 const App = () => {
   const l = useLogic(ItemsLogic);
-  const onChange = e => l.query(e.target.value)
   return (
     <div>
-      <input value={l.query()} onChange={onChange} />
-      <ul>{l.filtered().map(i => <li key={i.id}>{i.name}</li>)}</ul>
+      <select onChange={e => l.service.data.fetch(e.target.value)}>
+        { YEARS.map(y => <option key={y}>{y}</option>) }
+      </select>
+      <input onChange={e => l.filtered(e.target.value)} />
+      <ul>
+        { l.filtered().map(a => <li key={a.rank}>{a.article}</li>) }
+      </ul>
     </div>
   );
 };`;
 
-const SNIPPET_REACT = `const App = () => {
-  const [items, setItems] = useState([]);
+const SNIPPET_REACT = `// Top Wikipedia articles for a chosen year in a specific day
+
+const cache = new Map();
+
+const App = () => {
+  const [year, setYear] = useState('${defaultYear}');
+  const [items, setItems] = useState(() => cache.get('${defaultYear}') ?? []);
   const [query, setQuery] = useState('');
 
   const regex = useMemo(
@@ -53,77 +66,114 @@ const SNIPPET_REACT = `const App = () => {
   );
 
   useEffect(() => {
-    let cancelled = false;
-    fetch('/items.json')
-      .then(r => r.json())
-      .then(data => {
-        if (cancelled) return;
-        setItems(data);
-      })
-    return () => { cancelled = true; };
-  }, []);
+    if (cache.has(year)) { setItems(cache.get(year)); return; }
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const r = await fetch(getUrl(year), { signal: controller.signal });
+        const data = await r.json();
+        const next = data.items.at(0)?.articles ?? [];
+        cache.set(year, next);
+        setItems(next);
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        throw e;
+      }
+    })();
+    return () => controller.abort();
+  }, [year]);
 
   const filtered = useMemo(
-    () => items.filter((i) => regex.test(i.name)),
+    () => items.filter(a => regex.test(a.article)),
     [items, regex]
-  );
-
-  const onChange = useCallback(
-    e => setQuery(e.target.value),
-    []
   );
 
   return (
     <div>
-      <input value={query} onChange={onChange} />
-      <ul>{filtered.map((i) => <li key={i.id}>{i.name}</li>)}</ul>
+      <select onChange={e => setYear(e.target.value)}>
+        { YEARS.map(y => <option key={y}>{y}</option> )}
+      </select>
+      <input onChange={e => setQuery(e.target.value)} />
+      <ul>
+        {filtered.map(a => <li key={a.rank}>{a.article}</li>)}
+      </ul>
     </div>
   );
 };`;
 
-type Item = { id: number; name: string };
+// Wikimedia "top pageviews" REST endpoint. Year drives the URL; the
+// fetchState wrapper aborts the in-flight request when the user picks a
+// different year. Month/day are fixed to 04-08 (NA solar eclipse in 2024)
+// so the same path probes each year's same-date top articles.
 
-// Runtime equivalents of SNIPPET_LOGIC. Same shape — JS in the snippet,
-// typed here. The fetch hits /demo-items.json (served from `static/`).
-const ITEMS_URL = '/demo-items.json';
+const wikiUrl = (year: number) =>
+  `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${year}/01/01`;
 const isBrowser = typeof window !== 'undefined';
 
+interface WikiArticle {
+  article: string;
+  views: number;
+  rank: number;
+}
+interface WikiResponse {
+  items: Array<{ articles: WikiArticle[] }>;
+}
+
 class ItemsService {
-  items = asyncState(async () => {
-    // SSR can't fetch with a relative URL — skip on the server.
-    if (!isBrowser) return [] as Item[];
-    const r = await fetch(ITEMS_URL);
-    return (await r.json()) as Item[];
+  data = fetchState<(year?: number) => string | null, WikiResponse>(
+    (year = defaultYear) => (isBrowser ? wikiUrl(year) : null)
+  );
+
+  // Surface the article list (dropping Main_Page / Special: / Wikipedia:).
+  // The wrapped state is { loading, failed, result? } — pull articles from
+  // the result branch, treat loading/failed as empty.
+  articles = computedState(() => {
+    const s = this.data();
+    // 'result' narrows to the success variant — covers idle/loading/failed
+    // in one fall-through.
+    const items =
+      'result' in s ? s.result.items.at(0)?.articles ?? [] : [];
+    return items.filter(
+      (a) => !/^(Main_Page|Special:|Wikipedia:)/.test(a.article)
+    );
   });
 }
 
 class ItemsLogic {
   service = inject(ItemsService);
-  query = state('');
-  regex = computedState(() => new RegExp(this.query(), 'i'));
-  filtered = computedState(() =>{
-    const items = this.service.items();
-    if (!items) return [];
-    return items.filter(i => this.regex().test(i.name));
+  filtered = computedState((q) => {
+    const regex = new RegExp(q ?? '', 'i');
+    return this.service.articles().filter((a) => regex.test(a.article));
   });
 }
 
-const LiveCounter = () => {
+const WikiList = () => {
   const l = useLogic(ItemsLogic);
   const filtered = l.filtered();
   return (
     <>
+      <select
+        className={styles.demoInput}
+        defaultValue={defaultYear}
+        onChange={(e) => l.service.data.fetch(Number(e.target.value))}
+      >
+        {YEARS.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
       <input
         className={styles.demoInput}
         placeholder="filter…"
-        value={l.query()}
-        onChange={(e) => l.query(e.target.value)}
+        onChange={(e) => l.filtered(e.target.value)}
       />
       <ul className={styles.demoList}>
         {filtered.length === 0 ? (
           <li className={styles.demoEmpty}>no matches</li>
         ) : (
-          filtered.slice(0, 6).map((i) => <li key={i.id}>{i.name}</li>)
+          filtered
+            .map((a) => <li key={a.article}>{a.article.replace(/_/g, ' ')}</li>)
         )}
       </ul>
     </>
@@ -142,36 +192,40 @@ const Example = () => {
   const showLogic = mode.useReactLogic();
   return (
     <section className={styles.exampleWrap}>
-      <nav className={styles.exampleTabs} role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={showLogic}
-          onClick={() => mode.useReactLogic(true)}
-          className={`${styles.exampleTab} ${showLogic ? styles.exampleTabActive : ''}`}
-        >
-          {'// with react-logic'}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={!showLogic}
-          onClick={() => mode.useReactLogic(false)}
-          className={`${styles.exampleTab} ${!showLogic ? styles.exampleTabActive : ''}`}
-        >
-          {'// react without logic'}
-        </button>
-      </nav>
       <div className={styles.example}>
         <div className={styles.snippet}>
-          <CodeBlock language="jsx" showLineNumbers={false}>
+          <CodeBlock language="jsx" showLineNumbers={false} className={styles.codeBlockContainer}>
             {showLogic ? SNIPPET_LOGIC : SNIPPET_REACT}
           </CodeBlock>
         </div>
         <aside className={styles.demo}>
           <div className={styles.demoLabel}>{'// LIVE'}</div>
-          <LiveCounter />
+          <WikiList />
         </aside>
+        <nav className={styles.menu}>
+          <p className={styles.menuPitch}>
+            {showLogic ? (
+              <>
+                Cancellable fetch. Cached. Filtered.
+                <br />
+                <strong>Twenty-ish lines.</strong>
+              </>
+            ) : (
+              <>
+                Three hooks. Manual abort. A Map for cache.
+                <br />
+                <strong>Try it the other way.</strong>
+              </>
+            )}
+          </p>
+          <button
+            type="button"
+            className={styles.menuButton}
+            onClick={() => mode.useReactLogic(!showLogic)}
+          >
+            {showLogic ? '// try react without logic' : '// try with react-logic'}
+          </button>
+        </nav>
       </div>
     </section>
   );
@@ -203,6 +257,7 @@ export default function Home() {
             <li key={f}>{f}</li>
           ))}
         </ul>
+
         <Example />
         <div className={styles.actions}>
           <Link className="button button--primary button--lg" {...randomAmount()} to="/docs/getting-started">

@@ -7,16 +7,21 @@ sidebar_position: 2
 ## Install
 
 ```bash
-npm install @react-logic/core @react-logic/state @react-logic/di
+npm install @react-logic/react-logic
 ```
 
-The signal primitives (`state()` / `computedState()` / `asyncState()` / `effect()`) all live in `@react-logic/state`.
+This single package bundles the three required pieces — `core` (the `useLogic` hook), `state` (`state` / `computedState` / `effect` / `batch`), and `di` (`inject`, `Injector`, tokens).
+
+Optional helpers like `asyncState` and `fetchState` live in `@react-logic/utils` — install it when you need them:
+
+```bash
+npm install @react-logic/utils
+```
 
 ## A first logic class
 
 ```tsx
-import { useLogic } from '@react-logic/core';
-import { state, computedState } from '@react-logic/state';
+import { useLogic, state, computedState } from '@react-logic/react-logic';
 
 class CounterLogic {
   count = state(0);
@@ -51,7 +56,7 @@ No `useState`, no `useEffect`, no memoisation. The logic class is the source of 
 When two components need the same state, lift it to a **service** — another class — and inject it into both logic classes:
 
 ```tsx
-import { inject, Injector } from '@react-logic/di';
+import { inject, Injector } from '@react-logic/react-logic';
 
 class CartStore {
   items = state<Item[]>([]);
@@ -80,7 +85,7 @@ The bare class `CartStore` in the `provide` array is sugar for `{ provide: CartS
 Anything a logic class or service starts (intervals, listeners, subscriptions) is cleaned up via `onDestroy()`:
 
 ```ts
-import { onDestroy } from '@react-logic/di';
+import { onDestroy } from '@react-logic/react-logic';
 
 class TimeService {
   now = state(Date.now());
@@ -95,7 +100,7 @@ For logic classes, the callback fires on component unmount. For services, on `<I
 
 ## Where to next
 
-- [Concepts → Signals](/docs/concepts/signals) — `state` / `computedState` / `asyncState`, how reactivity works.
-- [Concepts → DI in React](/docs/concepts/di-in-react/) — Injectors, Providers, Injectables in detail.
-- [Recipes](/docs/recipes) — common patterns.
+- [Concepts](/docs/concepts) — the mental model: signals, DI, scopes.
+- [Guides](/docs/guides) — deep-dive walkthroughs of each subsystem.
+- [Recipes](/docs/recipes) — code-first answers to common shapes.
 - [API Reference](/docs/api) — generated reference for every export.

@@ -69,6 +69,7 @@
 .tagline {
   font-family: "SUSE Mono", sans-serif;
 
+  backdrop-filter: blur(3px);
   font-size: 1.4rem;
   margin: 0;
   color: var(--ifm-color-emphasis-900);
@@ -89,6 +90,7 @@
 .features {
   font-family: "SUSE Mono", sans-serif;
 
+  backdrop-filter: blur(3px);
   color: var(--ifm-color-emphasis-900);
   background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent 50%);
   list-style: none;
@@ -113,7 +115,7 @@
 }
 
 .exampleWrap {
-  width: min(960px, calc(100% - 2rem));
+  width: min(1200px, calc(100% - 2rem));
   margin: 0 auto 1.5rem;
 }
 
@@ -124,46 +126,52 @@
   font-family: "SUSE Mono", monospace;
 }
 
+/* Tabs only override what the global button style imposes — they're wider
+   (flex:1), de-emphasised when inactive (semi-transparent emphasis bg
+   instead of primary), and left-aligned to look like file headers. */
 .exampleTab {
   flex: 1;
   background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent 50%);
   color: var(--ifm-color-emphasis-700);
-  border: none;
-  padding: 0.5rem 0.8rem;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
   text-align: left;
-  corner-shape: bevel;
-  border-radius: 0;
-  border-top-left-radius: 18px 6px;
-  border-top-right-radius: 6px 22px;
-  border-bottom-left-radius: 22px 6px;
-  border-bottom-right-radius: 6px 18px;
-  transition: color 120ms ease, background 120ms ease, transform 120ms ease;
+  letter-spacing: 0.04em;
+  /* Smaller shadow than the global to fit the tab look. */
+  box-shadow: 2px 2px 0 var(--ifm-color-emphasis-1000);
 }
 
 .exampleTab:hover {
   color: var(--ifm-color-emphasis-900);
+  /* Hover handled by global rule for translate + shadow growth. */
 }
 
 .exampleTabActive {
   color: var(--ifm-color-emphasis-1000);
   background: color-mix(in srgb, var(--ifm-color-primary), transparent 35%);
-  box-shadow: 2px 2px 0 var(--ifm-color-emphasis-1000);
 }
 
 .example {
   display: grid;
+  gap: .5rem;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: stretch;
+  /* Row 1 = 1fr (flexible), row 2 = auto (menu's content height). The
+     snippet, which spans both rows, contributes its intrinsic height as
+     the grid's total. Result: total = snippet height; menu = its content;
+     demo = snippet height − menu height. */
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "snippet demo"
+    "snippet menu"
+  ;
 }
 
 @media (max-width: 800px) {
   .example {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "snippet"
+      "demo"
+      "menu";
   }
   .exampleTabs {
     flex-direction: column;
@@ -171,12 +179,19 @@
 }
 
 .snippet {
+  grid-area: snippet;
   text-align: left;
   font-family: "SUSE Mono", monospace;
   position: relative;
 }
 
 .demo {
+  grid-area: demo;
+  /* Allow the row track to shrink below the demo's intrinsic content size
+     — otherwise the demo's natural height (label + select + input + full
+     list) would push the grid taller than the snippet. */
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -185,20 +200,74 @@
   padding: 1rem 0.75rem;
   font-family: "SUSE Mono", monospace;
   color: var(--ifm-color-emphasis-900);
-  --snippet-transparent: 0%;
   background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent var(--snippet-transparent));
   backdrop-filter: blur(3px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   mask-border:
     url("https://mdn.github.io/shared-assets/images/examples/mask-border-diamonds.png")
     30 fill /
     20px /
     1px
     round;
-  mask-border-width: 20px 0 20px 0;
+  mask-border-width: 20px 0 0 0;
 }
 
-:global([data-theme='dark']) .demo {
+.menu {
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent var(--snippet-transparent));
+  backdrop-filter: blur(3px);
+  grid-area: menu;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 1rem 1rem  2rem 1rem;
+  mask-border:
+    url("https://mdn.github.io/shared-assets/images/examples/mask-border-diamonds.png")
+    30 fill /
+    20px /
+    1px
+    round;
+  mask-border-width: 0 0 20px 0;
+
+  p {
+    font-size: 1.2rem;
+  }
+
+  button {
+    align-self: center;
+  }
+}
+
+.codeBlockContainer {
+  margin-bottom: 0;
+}
+
+.menuPitch {
+  margin: 0;
+  font-family: "SUSE Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--ifm-color-emphasis-800);
+  text-align: left;
+}
+
+.menuPitch strong {
+  color: var(--ifm-color-primary);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Menu button is just a plain <button> — the global tapered style in
+   custom.css handles all the look-and-feel. Only positioning lives here. */
+.menuButton {
+  align-self: flex-start;
+  text-transform: lowercase;
+}
+
+:root {
+  --snippet-transparent: 10%;
+}
+
+:root([data-theme='dark']) {
   --snippet-transparent: 50%;
 }
 
@@ -281,8 +350,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  max-height: 11rem;
   overflow-y: auto;
+  text-align: left;
+  flex: 1 1 0;
+  /* Needed alongside flex:1 so the list can shrink below its content's
+     intrinsic height inside the constrained demo column. Without this it
+     would force the demo (and grid) taller than the snippet. */
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .demoList li::before {
@@ -304,9 +379,6 @@
    linear-gradient cuts the teeth; the vertical limits them to the edges only. */
 .snippet :global(.theme-code-block) {
   --tooth: 10px;
-  /* Dark mode: 50% see-through so grunge bleeds. Light mode: fully opaque so
-     code stays readable against the busier background. */
-  --snippet-transparent: 10%;
   text-shadow: var(--ifm-color-emphasis-100) 1px 1px 2px;
   background: color-mix(in srgb, var(--ifm-color-emphasis-100), transparent var(--snippet-transparent));
   backdrop-filter: blur(3px);
@@ -322,10 +394,6 @@
   mask-border-width: 20px 0 20px 0;
   padding-top: calc(var(--tooth) + 0.4rem);
   padding-bottom: calc(var(--tooth) + 0.4rem);
-}
-
-:global([data-theme='dark']) .snippet :global(.theme-code-block) {
-  --snippet-transparent: 50%;
 }
 
 .snippet :global(.theme-code-block) pre,
@@ -344,6 +412,7 @@
   gap: 0.75rem;
   flex-wrap: wrap;
   justify-content: center;
+  margin-bottom: 50vh;
 }
 
 @media (max-width: 600px) {

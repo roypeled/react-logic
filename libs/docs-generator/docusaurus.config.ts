@@ -45,6 +45,7 @@ const config: Config = {
           '../di/src/index.ts',
           '../core/src/index.ts',
           '../state/src/index.ts',
+          '../utils/src/index.ts',
           '../angular-adapter/src/index.ts',
         ],
         tsconfig: './tsconfig.typedoc.json',
@@ -76,6 +77,10 @@ const config: Config = {
         // sidebar tree.
         excludeGroups: true,
         categorizeByGroup: false,
+        // Order categories by importance instead of alphabetically. The
+        // listed names come first in this order; `*` is the wildcard for
+        // every other category (those fall back to alphabetical).
+        categoryOrder: ['State', 'Hooks', 'Components', '*'],
         // The `@module` tags name modules `@react-logic/<lib>`. The leading
         // `@` collides with Docusaurus's `@site/` path alias when resolving
         // imports — so strip the scope from output paths while keeping it in
@@ -84,6 +89,12 @@ const config: Config = {
       },
     ],
   ],
+
+  // Single source of truth for repo links. The `<SourceLink>` component
+  // reads this via `useDocusaurusContext().siteConfig.customFields.repoUrl`.
+  customFields: {
+    repoUrl: 'https://github.com/your-org/react-logic',
+  },
 
   themeConfig: {
     navbar: {

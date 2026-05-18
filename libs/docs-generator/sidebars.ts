@@ -16,7 +16,35 @@ interface SidebarItem {
   link?: unknown;
 }
 
+// Two-tier API sidebar: top-level groups → inner categories → exports.
+//
+// - "Essentials" — what you import day-to-day. Listed in import-importance
+//   order (State, Hooks, Components, Async, Functions, Tokens).
+// - "Advanced" — opt-in machinery for special integrations (custom DI
+//   adapters, bundler HMR) and the typed error classes you'd catch.
+// - "Reference" — type aliases, the catch-all bucket, internal markers.
+//   Useful when typing your own code or debugging; not normally imported.
+//
+// Categories not listed in any group fall through to "Reference" so a new
+// `@category` tag doesn't silently disappear from the sidebar.
+
+const API_GROUPS: ReadonlyArray<{ label: string; categories: readonly string[] }> = [
+  {
+    label: 'Essentials',
+    categories: ['State', 'Hooks', 'Components', 'Async', 'Functions', 'Tokens'],
+  },
+  {
+    label: 'Advanced',
+    categories: ['Adapter', 'HMR', 'Errors'],
+  },
+  {
+    label: 'Reference',
+    categories: ['Types', 'Other', 'Internal'],
+  },
+];
+
 const flattenByCategory = (items: SidebarItem[]): SidebarItem[] => {
+  // Merge per-package categories: { State: [...exports], Hooks: [...], ... }.
   const merged = new Map<string, SidebarItem[]>();
   for (const pkg of items) {
     if (pkg.type !== 'category') continue;
@@ -27,9 +55,31 @@ const flattenByCategory = (items: SidebarItem[]): SidebarItem[] => {
       merged.set(cat.label, list);
     }
   }
-  return Array.from(merged.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([label, items]) => ({ type: 'category', label, items }));
+
+  // Bucket merged categories into the three top-level groups. Categories
+  // listed in a group keep that group's declared order; anything unknown
+  // falls into the last group (Reference) at the end, alphabetically.
+  const known = new Set(API_GROUPS.flatMap((g) => g.categories));
+  const unknown = Array.from(merged.keys())
+    .filter((c) => !known.has(c))
+    .sort();
+
+  return API_GROUPS.map((group) => {
+    const labels =
+      group === API_GROUPS[API_GROUPS.length - 1]
+        ? [...group.categories, ...unknown]
+        : group.categories;
+    const innerCategories = labels
+      .filter((label) => merged.has(label))
+      .map((label) => ({
+        type: 'category' as const,
+        label,
+        items: merged.get(label) ?? [],
+      }));
+    return innerCategories.length > 0
+      ? { type: 'category' as const, label: group.label, items: innerCategories }
+      : null;
+  }).filter((g): g is SidebarItem => g !== null);
 };
 
 const sidebars: SidebarsConfig = {
@@ -53,7 +103,20 @@ const sidebars: SidebarsConfig = {
           ],
         },
         'concepts/di-adapters',
-        'concepts/testing',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Guides',
+      link: { type: 'doc', id: 'guides/index' },
+      items: [
+        'guides/reactive-state',
+        'guides/async-state',
+        'guides/fetch-state',
+        'guides/forms',
+        'guides/batch-operations',
+        'guides/dependency-injection',
+        'guides/testing',
       ],
     },
     {
@@ -62,12 +125,8 @@ const sidebars: SidebarsConfig = {
       link: { type: 'doc', id: 'recipes/index' },
       items: [
         'recipes/form-input',
-        'recipes/async-data',
         'recipes/persistent-state',
         'recipes/scoped-services',
-        'recipes/testing-mocks',
-        'recipes/signal-effects',
-        'recipes/cleanup',
         'recipes/provider-override',
       ],
     },

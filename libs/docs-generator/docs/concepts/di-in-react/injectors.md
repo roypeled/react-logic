@@ -7,7 +7,7 @@ sidebar_position: 2
 An **Injector** is a React component that defines a DI scope. Anything provided on it is available to the subtree below; anything it creates is torn down when it unmounts.
 
 ```tsx
-import { Injector } from '@react-logic/di';
+import { Injector } from '@react-logic/react-logic';
 
 <Injector provide={[CartStore, { provide: API_URL, useValue: '/api' }]}>
   <App />

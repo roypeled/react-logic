@@ -4,15 +4,15 @@ sidebar_position: 1
 
 # Signals
 
-react-logic's reactivity is built on **signals** — small reactive cells that read like getters and write like setters. Three primitives live in `@react-logic/state`:
+react-logic's reactivity is built on **signals** — small reactive cells that read like getters and write like setters. Two core primitives live in `@react-logic/state`; the async helper lives in the optional `@react-logic/utils`:
 
-| Primitive | Purpose | Setter? |
-|---|---|---|
-| `state(initial)` | Mutable reactive cell. | Yes — `s(next)`. |
-| `computedState(fn)` | Derived, memoised. | No. |
-| `asyncState(fn)` | Async-seeded cell. | No. |
-
-Under the hood they're [`alien-signals`](https://github.com/stackblitz/alien-signals) — but the framework only depends on a few of its operations, so swapping the runtime is possible if you ever need to.
+| Primitive | Package | Purpose | Setter? |
+|---|---|---|---|
+| `state(initial)` | `@react-logic/state` | Mutable reactive cell. | Yes — `s(next)`. |
+| `computedState(fn)` | `@react-logic/state` | Derived, memoised. Optionally takes an input. | Input variant only. |
+| `asyncState(fn)` | `@react-logic/utils` | Async-seeded cell. | No. |
+| `effect(fn)` | `@react-logic/state` | Reactive side effect with optional cleanup. | — |
+| `batch(fn)` | `@react-logic/state` | Coalesce multiple writes into one notification. | — |
 
 ## state
 
@@ -25,7 +25,7 @@ count();      // 5
 
 `state()` returns a single function that's both getter and setter. Calling with no args reads; calling with one arg writes.
 
-When you put a `state()` call on a logic-class field, `useLogic` finds it (by signal-shape detection), reads it during render, and re-renders when it changes.
+Put `state()` on a logic-class field, and `useLogic` re-renders the component whenever that signal changes. You don't subscribe — reading a signal during render is enough.
 
 ## computedState
 
@@ -36,11 +36,32 @@ class Cart {
 }
 ```
 
-`computedState(fn)` runs `fn` on first read and caches the result. It re-runs only when one of the signals it read has changed — and even then, subscribers fire only if the *output* changed. That makes chains of computeds cheap.
+`computedState(fn)` derives a value from other signals. It only re-runs when one of the signals it reads has changed, and consumers fire only if the *output* changed. Chains of computeds are cheap.
+
+### Input variant
+
+If the compute callback takes an argument, the returned function doubles as a setter — `c(input)` writes, `c()` reads the derived value:
+
+```ts
+class Search {
+  pattern = computedState((q = '') => new RegExp(q, 'i'));
+}
+
+const s = new Search();
+s.pattern('foo'); // void — writes the input
+s.pattern();      // RegExp(/foo/i) — reads the derived value
+```
+
+Use it when a derived value is keyed off a single piece of state that nothing else needs to read — saves declaring a separate `state()` field for it. The [reactive state guide](/docs/guides/reactive-state#input-variant) covers when the input is `T` vs `T | undefined`.
 
 ## asyncState
 
+> Lives in the optional `@react-logic/utils` package. Install with `npm install @react-logic/utils`.
+
 ```ts
+import { state } from '@react-logic/react-logic';
+import { asyncState } from '@react-logic/utils';
+
 class Search {
   query = state('');
   results = asyncState(async () => {
@@ -51,16 +72,41 @@ class Search {
 }
 ```
 
-The producer runs inside an effect. Any signal it reads becomes a tracked dependency: when one changes, the producer re-runs and the value updates. Reading the result returns the latest resolved value, or `undefined` until the first resolve.
+`asyncState` re-runs its producer whenever a signal it reads changes. Reading the result returns the latest resolved value, or `undefined` until the first resolve.
 
-`asyncState` has no built-in error handling, retries, or cancellation. For richer states (loading / error / data) compose with companion `state()`s yourself.
+For cancellation and richer states (loading / error), see the [async state guide](/docs/guides/async-state).
+
+## Batching writes
+
+When a method updates several signals in sequence, each write notifies subscribers. Most of the time this is fine. When intermediate states would be incoherent — or when an effect would do expensive work on every step — wrap the writes in `batch(fn)`:
+
+```ts
+import { batch, state } from '@react-logic/react-logic';
+
+class Form {
+  name = state('');
+  email = state('');
+  age = state(0);
+
+  reset() {
+    batch(() => {
+      this.name('');
+      this.email('');
+      this.age(0);
+    });
+    // Subscribers fire once, with all three values reset.
+  }
+}
+```
+
+`startBatch()` / `endBatch()` are also exported for cases that span control flow `batch()` can't wrap. See the [batch operations guide](/docs/guides/batch-operations).
 
 ## Effects (when you need them)
 
-Sometimes you want a side effect (logging, persisting, calling an external API) to run whenever signals change — but no value to expose. Use `effect` from `@react-logic/state` directly inside a logic class constructor:
+Sometimes you want a side effect (logging, persisting, syncing) to run whenever signals change — but no value to expose. Use `effect`:
 
 ```ts
-import { effect } from '@react-logic/state';
+import { effect } from '@react-logic/react-logic';
 
 class Logger {
   count = state(0);
@@ -72,9 +118,7 @@ class Logger {
 }
 ```
 
-`useLogic` wraps the constructor in a tracking scope, so the effect is automatically disposed when the component unmounts. For service-side effects (in classes constructed via `inject()`), the framework opens its own scope so the effect lives as long as the providing `<Injector>`, not the consuming component.
-
-The effect body may return a cleanup function — useEffect-style. It fires before each subsequent re-run and on final teardown:
+Effects placed in a constructor are cleaned up automatically when the owning logic class or service goes away. The body may return a cleanup callback, useEffect-style:
 
 ```ts
 effect(() => {
@@ -83,11 +127,7 @@ effect(() => {
 });
 ```
 
-## How re-renders happen
-
-`useLogic` walks the logic instance and any injected services, reads each signal field once during render-tracking, and subscribes the component to those reads. When any subscribed signal changes, the component re-renders.
-
-You don't manually subscribe. You don't pick what to track. Reading a signal anywhere in the render path is enough.
+See the [reactive state guide](/docs/guides/reactive-state#effect) for tracking rules and anti-patterns.
 
 ## What's *not* a signal
 

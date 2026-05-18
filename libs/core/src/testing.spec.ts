@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { asyncState, state } from '@react-logic/state';
+import { state } from '@react-logic/state';
+import { asyncState } from '@react-logic/utils';
 import { inject, InjectionToken, onDestroy } from '@react-logic/di';
 import { createTestInjectionScope, flushAsyncSignals, flushAsyncSignalsUntil } from './testing';
 

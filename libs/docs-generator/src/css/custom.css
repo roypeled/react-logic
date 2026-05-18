@@ -132,6 +132,52 @@ body {
   }
 }
 
+/* -----------------------------------------------------------------------
+ * Global tapered button.
+ * ----------------------------------------------------------------------
+ * Applies to plain `<button>` elements outside Docusaurus' own button
+ * system. Asymmetric beveled corners read as Y2K/grunge UI; chunky offset
+ * shadow gives the printed-stamp feel; hover lifts it, active slams it.
+ *
+ * Excluded:
+ *   .button         — Docusaurus' branded button class (handled separately
+ *                     above, with the anchor-positioning trick for hero CTAs)
+ *   .clean-btn      — Docusaurus utility for unstyled buttons (theme toggle,
+ *                     search trigger, etc.)
+ *   .navbar__toggle — Mobile menu hamburger
+ *   [aria-haspopup] — Dropdown triggers that should look like links
+ * ----------------------------------------------------------------------- */
+button:not(.button):not(.clean-btn):not(.navbar__toggle):not([aria-haspopup]) {
+  font-family: "SUSE Mono", monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ifm-color-emphasis-1000);
+  background: color-mix(in srgb, var(--ifm-color-primary), transparent 25%);
+  border: none;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  corner-shape: bevel;
+  border-radius: 0;
+  border-top-left-radius: 18px 6px;
+  border-top-right-radius: 6px 22px;
+  border-bottom-left-radius: 22px 6px;
+  border-bottom-right-radius: 6px 18px;
+  box-shadow: 3px 3px 0 var(--ifm-color-emphasis-1000);
+  transition: transform 100ms ease, box-shadow 100ms ease, background 120ms ease;
+}
+
+button:not(.button):not(.clean-btn):not(.navbar__toggle):not([aria-haspopup]):hover {
+  background: var(--ifm-color-primary);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ifm-color-emphasis-1000);
+}
+
+button:not(.button):not(.clean-btn):not(.navbar__toggle):not([aria-haspopup]):active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ifm-color-emphasis-1000);
+}
+
 h1, h2, h3, h4, h5, h6, em, .navbar__brand {
   font-style: normal;
   transition: all 300ms;
@@ -198,4 +244,10 @@ h1, h2, h3, h4, h5, h6, em, .navbar__brand {
   padding: 0;
   border: none;
   font-weight: 600;
+}
+
+strong {
+  font-variation-settings:
+    "GRAD" -200, "XOPQ" 175, "XTRA" 407, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 470, "YTUC" 760, "wght" 600, "wdth" 117, "slnt" -5
+ ;
 }

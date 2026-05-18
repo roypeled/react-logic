@@ -1,5 +1,134 @@
-import { computed, effect as rawEffect, signal } from 'alien-signals';
+import {
+  computed,
+  effect as rawEffect,
+  endBatch,
+  signal,
+  startBatch,
+} from 'alien-signals';
 import { onDestroy } from '@react-logic/di';
+
+/**
+ * Coalesce multiple signal writes into a single notification pass. Inside
+ * the callback, subscribers (effects, `useLogic` re-renders) don't fire on
+ * each individual write — they fire once at the end with the final values.
+ *
+ * Nests safely (uses alien-signals' depth counter under the hood) and runs
+ * the final flush in a `try`/`finally`, so a thrown exception inside the
+ * callback still closes the batch.
+ *
+ * **Use it when:**
+ * - A method writes several related fields and you want consumers to see
+ *   one consistent snapshot, not an intermediate state with only half
+ *   updated.
+ * - You're applying a list of changes in a loop and want to avoid the
+ *   re-render storm.
+ *
+ * **Don't use it when:**
+ * - The writes are already sequential within a single synchronous callback
+ *   that doesn't itself read signals between writes — alien-signals already
+ *   coalesces those at the React render boundary.
+ *
+ * @typeParam T - The callback's return type, forwarded through.
+ * @category State
+ * @param fn - The work to perform inside the batch.
+ * @returns Whatever `fn` returns.
+ * @example
+ * ```ts
+ * class Form {
+ *   name = state('');
+ *   email = state('');
+ *   age = state(0);
+ *
+ *   reset() {
+ *     batch(() => {
+ *       this.name('');
+ *       this.email('');
+ *       this.age(0);
+ *     });
+ *     // Subscribers see exactly one update with all three values reset.
+ *   }
+ * }
+ * ```
+ */
+export function batch<T>(fn: () => T): T {
+  startBatch();
+  try {
+    return fn();
+  } finally {
+    endBatch();
+  }
+}
+
+/**
+ * Raw batch open/close. Prefer `batch(fn)` — it pairs the close in a
+ * `finally`. Exposed for cases where the batch must span control flow
+ * `batch()` can't wrap (e.g. opening a batch in one event handler and
+ * closing it in another).
+ *
+ * Always call `endBatch()` exactly once per `startBatch()`. Mismatched
+ * calls leave subscribers permanently paused.
+ *
+ * @category State
+ */
+export { startBatch, endBatch };
+
+/**
+ * Reactive getter/setter signature, mirroring `state()`. Used by the
+ * `computedState` overload that accepts an input — the returned function is
+ * dual-purpose: read with `()`, write input with `(value)`.
+ *
+ * @internal
+ */
+type InputComputed<I, T> = {
+  (): T;
+  (input: I): void;
+};
+
+/**
+ * Pick the return shape based on the callback's parameter list.
+ *
+ * - `[]` (literally zero params) → plain `() => T` getter.
+ * - Anything else (one required param, one optional, one with default…) →
+ *   dual getter/setter `InputComputed<I, T>`.
+ *
+ * Optional-param tuples like `[s?: string]` resolve `'length'` to the union
+ * `0 | 1`, which does not satisfy `extends 0`. That's how default-arg
+ * callbacks `(q = '') => …` (externally `(q?: string) => …`) land in the
+ * input-variant branch instead of being silently treated as zero-arg.
+ *
+ * @internal
+ */
+/**
+ * Brand used by `@react-logic/core`'s `useLogic` tracking pass to recognise
+ * plain-function wrappers that internally subscribe to alien-signals
+ * signals — `computedState`'s dual getter/setter, `fetchState` (in
+ * `@react-logic/utils`), and any future reactive accessor. alien-signals'
+ * `isComputed`/`isSignal` only match its own `bind`-produced functions, so
+ * without this brand the framework would skip the field and never
+ * subscribe to its updates.
+ *
+ * Use `Symbol.for` so the contract crosses package boundaries without an
+ * import: any package can mark its wrappers with this brand, and core
+ * recognises them uniformly.
+ *
+ * @category Internal
+ */
+export const REACTIVE_ACCESSOR_MARKER = Symbol.for(
+  '@react-logic/reactive-accessor'
+);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ComputedReturn<F extends (...args: any) => unknown> =
+  Parameters<F>['length'] extends 0
+    ? () => ReturnType<F>
+    : undefined extends Parameters<F>[0]
+      ? InputComputed<Parameters<F>[0], ReturnType<F>>
+      : // Unsafe: callback's param doesn't accept `undefined`, but the
+        // wrapped signal starts as `undefined`, so the first read would
+        // crash. Returning `never` here makes the call site reject the
+        // result, steering the user toward `(q = …) => …` or
+        // `(q: T | undefined) => …`.
+        never;
 
 /**
  * Creates a reactive piece of state — a getter/setter function backed by a
@@ -29,14 +158,9 @@ import { onDestroy } from '@react-logic/di';
 export const state = signal;
 
 /**
- * Creates a derived state that recomputes lazily when any signal it reads
- * changes — and crucially, only when *the value it returns* changes do its
- * own subscribers re-fire. Call shape mirrors `state()`: read with `c()`,
- * but there's no setter.
- *
- * Use it for any value that's a pure function of other reactive state. It's
- * cheaper than computing inside the render body because the result is
- * memoised across reads with the same upstream values.
+ * Pure derivation. The compute runs on first read and caches; it re-runs
+ * only when a signal it depends on changes, and subscribers fire only if
+ * the output value changes.
  *
  * @typeParam T - The computed value's type. Inferred from `fn`'s return.
  * @category State
@@ -47,51 +171,69 @@ export const state = signal;
  * class Cart {
  *   items = state<Item[]>([]);
  *   total = computedState(() => this.items().reduce((s, i) => s + i.price, 0));
- *   isEmpty = computedState(() => this.items().length === 0);
  * }
  * ```
  */
-export const computedState = computed;
-
 /**
- * Like `state()`, but seeded by an async producer. Starts as `undefined`,
- * resolves to the awaited value, and notifies subscribers when it does.
+ * Plain derivation — call `c()` to read the latest value.
  *
- * The returned getter is read-only — there's no setter. The producer runs
- * inside an effect, so any signals it reads become tracked dependencies; if
- * those change, the producer re-runs and the value updates again. Useful
- * for derived async data that should reload when inputs change (e.g. a
- * fetch keyed off a user-id signal).
+ * **Input variant** — if `fn` takes one parameter, `computedState` wraps an
+ * internal signal as the input. The returned function is dual-purpose:
+ * `c()` reads the derived value, `c(input)` writes the input. The signal
+ * starts as `undefined`, so the parameter must accept `undefined`:
  *
- * No built-in error handling — wrap the producer in try/catch and store
- * status fields in companion `state()`s if you need richer states (loading,
- * error, success).
+ * - `(q: string | undefined) => …` — explicit, handle the undefined case
+ *   inside the body.
+ * - `(q = '') => …` — default-arg syntax. The default value is what the
+ *   callback sees on the first read.
  *
- * @typeParam T - The resolved value's type. Inferred from `fn`'s return.
+ * A bare `(q: string) => …` (no default, no `| undefined`) is a type error
+ * — the runtime would otherwise crash on the first read.
+ *
+ * @typeParam F - The callback's full signature; the return shape (plain
+ *   getter vs. getter/setter) is picked off `Parameters<F>`.
  * @category State
- * @param fn - A function that returns a promise; tracked for re-execution.
- * @return A getter for the resolved value, or `undefined` until the first
- *   resolve completes.
- * @example
+ * @param fn - A function that returns the computed value, optionally from a
+ *   wrapped input.
+ * @returns Either a getter `() => T` (zero-param `fn`) or a dual
+ *   getter/setter `InputComputed<I, T>` (one-param `fn`).
+ * @example Plain
  * ```ts
- * class UserProfile {
- *   userId = state<string | null>(null);
- *   profile = asyncState(async () => {
- *     const id = this.userId();
- *     if (!id) return null;
- *     return (await fetch(`/users/${id}`)).json();
- *   });
+ * class Cart {
+ *   items = state<Item[]>([]);
+ *   total = computedState(() => this.items().reduce((s, i) => s + i.price, 0));
  * }
  * ```
+ * @example Input variant — default-arg form
+ * ```ts
+ * class Search {
+ *   pattern = computedState((q = '') => new RegExp(q, 'i'));
+ * }
+ * const s = new Search();
+ * s.pattern('foo'); // void — sets the input
+ * s.pattern();      // RegExp(/foo/i)
+ * ```
  */
-export const asyncState = <T>(fn:() =>  Promise<T>): () => T | undefined => {
-  const value = signal<T | undefined>(undefined);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function computedState<F extends (...args: any) => unknown>(
+  fn: F
+): ComputedReturn<F> {
+  // Always wrap an input signal. For zero-param callbacks the signal is
+  // never read and never written — alien-signals' computed only subscribes
+  // to signals actually read inside `fn`, so it's free. This sidesteps the
+  // `fn.length` problem: default-arg syntax `(q = '') => …` reports
+  // `length === 0` at runtime, so we don't trust it.
+  const input = signal<unknown>(undefined);
+  const derived = computed(() => (fn as (i?: unknown) => unknown)(input()));
 
-  rawEffect(async () => {
-    value(await fn());
-  });
-
-  return value;
+  function accessor(...args: unknown[]): unknown {
+    if (args.length === 0) return derived();
+    input(args[0]);
+    return undefined;
+  }
+  // Brand the accessor so the framework's signal-detection picks it up.
+  (accessor as unknown as Record<symbol, true>)[REACTIVE_ACCESSOR_MARKER] = true;
+  return accessor as ComputedReturn<F>;
 }
 
 /**

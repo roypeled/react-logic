@@ -1,0 +1,62 @@
+---
+sidebar_position: 7
+---
+
+import SourceLink from '@site/src/components/SourceLink';
+
+# Batching — demo
+
+Three signals; one effect watching all of them; a "saves" counter shows how many times the effect ran. Reset writes three fields in a row — with `batch`, the effect fires once; without, three times.
+
+## What it shows
+
+- Three independent signals (`name`, `email`, `age`).
+- An `effect` reading all three; each run increments `saves` (simulating a localStorage persistence cost).
+- Two reset buttons — one writes naively (three notifications), one wraps the writes in `batch(() => …)` (one notification).
+- Side-by-side comparison: the counter jumps by 3 vs by 1.
+
+## The logic
+
+```ts
+import { batch, effect, state } from '@react-logic/react-logic';
+
+class FormLogic {
+  name  = state('Alice');
+  email = state('alice@example.com');
+  age   = state(30);
+  saves = state(0);
+
+  constructor() {
+    effect(() => {
+      this.name(); this.email(); this.age();   // subscribe to all three
+      this.saves(this.saves() + 1);            // count effect runs
+    });
+  }
+
+  resetUnbatched() {
+    this.name('');
+    this.email('');
+    this.age(0);
+    // → effect runs three times (once per write).
+  }
+
+  resetBatched() {
+    batch(() => {
+      this.name('');
+      this.email('');
+      this.age(0);
+    });
+    // → effect runs once, after the batch closes.
+  }
+}
+```
+
+For the everyday case (React render boundary already coalesces writes inside one event handler), `batch` is unnecessary. It matters when the work *inside* the effect is expensive — like persisting to disk, posting to an API, or driving an animation.
+
+## Run it
+
+```sh
+nx serve demo-batching
+```
+
+<SourceLink path="demos/batching">View source on GitHub →</SourceLink>

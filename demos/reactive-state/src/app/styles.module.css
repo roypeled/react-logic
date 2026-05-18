@@ -1,0 +1,68 @@
+.card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: #6b6b85;
+  min-width: 6rem;
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.doubledValue {
+  composes: value;
+  color: #5a3cff;
+}
+
+.clock {
+  composes: value;
+  font-size: 1rem;
+  color: #4a4a6a;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.55rem 0;
+  border: none;
+  border-radius: 6px;
+  background: #5a3cff;
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 120ms ease, transform 60ms ease;
+}
+
+.btn:hover { background: #4a30d8; }
+.btn:active { transform: translateY(1px); }
+.btn.secondary { background: #e8e8f0; color: #1a1a2e; }
+.btn.secondary:hover { background: #d8d8e4; }
+
+.persistHint {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  font-size: 0.8rem;
+  color: #6b6b85;
+}

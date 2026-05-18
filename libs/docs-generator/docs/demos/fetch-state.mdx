@@ -1,0 +1,51 @@
+---
+sidebar_position: 4
+---
+
+import SourceLink from '@site/src/components/SourceLink';
+
+# Fetch state — demo
+
+Two panels — reactive search on the left, imperative mutation on the right — both driven by `fetchState` variants. Every transition is visible: idle / loading / success / failed.
+
+## What it shows
+
+- **Reactive search** — `fetchState((q = '') => …)`. Typing into the input writes the wrapped signal, which retriggers a GET. Previous in-flight request is aborted on every keystroke.
+- **Imperative mutation** — `postFetchState.callable(() => ({ url, body }))`. The build callback closes over `this.draft()` (a sibling `state` signal on the logic class) so `.submit.fetch()` takes no args; the request reads whatever the textarea currently has.
+- **Discriminated state shape** — each panel's status line shows the `FetchStateValue` variant (idle/loading/success/failed) plus the HTTP status when present.
+
+## The logic
+
+```ts
+import { state } from '@react-logic/react-logic';
+import { fetchState, postFetchState } from '@react-logic/utils';
+
+class PostsLogic {
+  // Reactive search — re-fires on .fetch(...), aborts previous.
+  posts = fetchState((q = '') =>
+    q
+      ? `https://jsonplaceholder.typicode.com/posts?title_like=${q}`
+      : 'https://jsonplaceholder.typicode.com/posts?_limit=5'
+  );
+
+  // Draft is owned by the logic class. The textarea binds to it directly.
+  draft = state('');
+
+  // Imperative POST — fires on .submit.fetch(). Build callback closes over
+  // `this.draft()`, so the call site is `submit.fetch()` with no args.
+  submit = postFetchState.callable(() => ({
+    url:  'https://jsonplaceholder.typicode.com/comments',
+    body: { postId: 1, name: 'demo', email: 'demo@example.com', body: this.draft() },
+  }));
+}
+```
+
+Open the Network tab while typing in the search box — failed/cancelled requests appear, showing the abort signal is working.
+
+## Run it
+
+```sh
+nx serve demo-fetch-state
+```
+
+<SourceLink path="demos/fetch-state">View source on GitHub →</SourceLink>

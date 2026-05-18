@@ -61,6 +61,36 @@ describe('useLogic — basic reactivity', () => {
     });
     expect(screen.getByTestId('v').textContent).toBe('10');
   });
+
+  it('re-renders when an input-variant computedState input is written', async () => {
+    // Regression: the dual getter/setter returned by `computedState((q) => …)`
+    // is a plain function, not an alien-signals signal/computed. `useLogic`'s
+    // tracking pass must still recognise it (via the shared brand symbol)
+    // and subscribe, otherwise writing the input wouldn't re-render.
+    class C {
+      filtered = computedState((q = '') => q.toUpperCase());
+    }
+    let r!: C;
+    const Comp = () => {
+      const logic = useLogic(C);
+      r = logic;
+      return <span data-testid="v">{logic.filtered()}</span>;
+    };
+    render(<Comp />);
+    expect(screen.getByTestId('v').textContent).toBe('');
+
+    await act(async () => {
+      r.filtered('hello');
+      await tick();
+    });
+    expect(screen.getByTestId('v').textContent).toBe('HELLO');
+
+    await act(async () => {
+      r.filtered('world');
+      await tick();
+    });
+    expect(screen.getByTestId('v').textContent).toBe('WORLD');
+  });
 });
 
 describe('useLogic — DI integration (default global injector)', () => {

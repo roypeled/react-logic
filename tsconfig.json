@@ -13,10 +13,31 @@
       "path": "./libs/di"
     },
     {
-      "path": "./demo"
+      "path": "./libs/angular-adapter"
     },
     {
-      "path": "./libs/angular-adapter"
+      "path": "./libs/utils"
+    },
+    {
+      "path": "./libs/react-logic"
+    },
+    {
+      "path": "./demos/reactive-state"
+    },
+    {
+      "path": "./demos/async-state"
+    },
+    {
+      "path": "./demos/fetch-state"
+    },
+    {
+      "path": "./demos/batching"
+    },
+    {
+      "path": "./demos/forms"
+    },
+    {
+      "path": "./demos/di"
     }
   ]
 }

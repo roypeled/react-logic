@@ -29,7 +29,7 @@ const PALETTES = {
     blue: '#2a6fff',
     purple: '#a83cff',
     cyan: '#2affe0',
-    pink: '#ff5a7a',
+    pink: '#ff5a7a'
   },
   hellfire: {
     bg: ['#3a0a14', '#1a0410', '#080205'],
@@ -37,7 +37,7 @@ const PALETTES = {
     blue: '#ff6a3c',
     purple: '#c8003c',
     cyan: '#ffaa3c',
-    pink: '#ff8a5a',
+    pink: '#ff8a5a'
   },
   midnight: {
     bg: ['#0a1a3a', '#04102a', '#020614'],
@@ -45,7 +45,7 @@ const PALETTES = {
     blue: '#2a6fff',
     purple: '#6a3cff',
     cyan: '#2affe0',
-    pink: '#7aafff',
+    pink: '#7aafff'
   },
   toxic: {
     bg: ['#0a2a1a', '#041a14', '#020a08'],
@@ -53,7 +53,7 @@ const PALETTES = {
     blue: '#00ff8a',
     purple: '#aaff00',
     cyan: '#00ffaa',
-    pink: '#ffea00',
+    pink: '#ffea00'
   },
   vapor: {
     bg: ['#2a0a3a', '#1a0428', '#0a0218'],
@@ -61,8 +61,8 @@ const PALETTES = {
     blue: '#3aaaff',
     purple: '#aa3aff',
     cyan: '#3affea',
-    pink: '#ff5acf',
-  },
+    pink: '#ff5acf'
+  }
 } as const satisfies Record<string, Palette>;
 
 type PaletteKey = keyof typeof PALETTES;
@@ -86,7 +86,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
   return [
     parseInt(h.slice(0, 2), 16) / 255,
     parseInt(h.slice(2, 4), 16) / 255,
-    parseInt(h.slice(4, 6), 16) / 255,
+    parseInt(h.slice(4, 6), 16) / 255
   ];
 };
 
@@ -336,7 +336,7 @@ const HEX_FRAGMENTS = [
   'kernel32.dll :: loaded',
   '//-- handshake complete --//',
   'IRQ.07 :: COM2 ready',
-  'frame.drop = 0.042ms',
+  'frame.drop = 0.042ms'
 ];
 
 const VIEWBOX_W = 1600;
@@ -347,7 +347,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
   const r = mulberry32(seed);
   const range = (a: number, b: number) => a + r() * (b - a);
   const int = (a: number, b: number) => Math.floor(a + r() * (b - a + 1));
-  const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(r() * arr.length)];
+  const pick = <T, >(arr: readonly T[]): T => arr[Math.floor(r() * arr.length)];
 
   const orbColors = [p.purple, p.blue, p.red, p.cyan, p.purple];
   const orbCenter: [number, number][] = [];
@@ -380,7 +380,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
       kind: 'torn',
       points: pts.join(' '),
       color: pick([p.purple, p.red, p.blue]),
-      opacity: range(0.3, 0.55),
+      opacity: range(0.3, 0.55)
     });
   }
 
@@ -395,7 +395,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
       rx: radius,
       ry: isEllipse ? radius * 0.6 : radius,
       color: pick([p.purple, p.red, p.blue, p.pink]),
-      opacity: range(0.25, 0.5),
+      opacity: range(0.25, 0.5)
     });
   }
 
@@ -410,13 +410,13 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
         cx: cx + range(-60, 60),
         cy: cy + range(-50, 50),
         r: range(0.5, 3.2),
-        opacity: range(0.5, 0.95),
+        opacity: range(0.5, 0.95)
       });
     }
     decorations.push({
       kind: 'splash',
       color: pick([p.red, p.blue, p.purple, p.pink]),
-      dots,
+      dots
     });
   }
 
@@ -431,7 +431,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
   // canvas back to the underlying page bg (page gradient behind the hero).
   decorations.push(
     { kind: 'darkStreak', x: -200, y: VIEWBOX_H * 0.18, w: VIEWBOX_W + 400, h: 14, color: '#000018' },
-    { kind: 'darkStreak', x: -200, y: VIEWBOX_H * 0.8, w: VIEWBOX_W + 400, h: 22, color: '#000010' },
+    { kind: 'darkStreak', x: -200, y: VIEWBOX_H * 0.8, w: VIEWBOX_W + 400, h: 22, color: '#000010' }
   );
 
   // 11 glitch bars
@@ -443,7 +443,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
       w: range(60, 280),
       h: range(1, 5),
       color: pick([p.red, p.blue, p.purple, p.cyan, p.pink]),
-      opacity: range(0.7, 1),
+      opacity: range(0.7, 1)
     });
   }
 
@@ -455,7 +455,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
       y: range(40, VIEWBOX_H - 40),
       color: pick([p.blue, p.pink, p.purple, p.cyan]),
       opacity: range(0.35, 0.6),
-      text: pick(HEX_FRAGMENTS),
+      text: pick(HEX_FRAGMENTS)
     });
   }
 
@@ -466,7 +466,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
       cx: range(120, VIEWBOX_W - 120),
       cy: range(120, VIEWBOX_H - 120),
       r: range(18, 28),
-      color: pick([p.red, p.blue, p.pink]),
+      color: pick([p.red, p.blue, p.pink])
     });
   }
 
@@ -480,7 +480,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
     decorations.push({
       kind: 'dropout',
       y: range(0, VIEWBOX_H),
-      h: range(1, 3),
+      h: range(1, 3)
     });
   }
 
@@ -499,10 +499,10 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
       [173, -41],
       [211, -83],
       [257, -149],
-      [313, -197],
+      [313, -197]
     ],
     decorations,
-    warpSeed: Math.floor(r() * 200),
+    warpSeed: Math.floor(r() * 200)
   };
 };
 
@@ -527,130 +527,130 @@ const Overlay = ({ data }: { data: InstanceData }) => {
   const renderDecoration = (d: Decoration, i: number) => {
     switch (d.kind) {
       case 'streak':
-          return (
-            <rect
-              key={i}
-              x={d.x}
-              y={d.y}
-              width={d.w}
-              height={d.h}
-              fill={d.color}
-              opacity={d.opacity}
-              transform={`rotate(-6 ${VIEWBOX_W / 2} ${d.y + d.h / 2})`}
-              style={{ mixBlendMode: 'screen' }}
+        return (
+          <rect
+            key={i}
+            x={d.x}
+            y={d.y}
+            width={d.w}
+            height={d.h}
+            fill={d.color}
+            opacity={d.opacity}
+            transform={`rotate(-6 ${VIEWBOX_W / 2} ${d.y + d.h / 2})`}
+            style={{ mixBlendMode: 'screen' }}
+          />
+        );
+      case 'glitch':
+        return (
+          <rect
+            key={i}
+            x={d.x}
+            y={d.y}
+            width={d.w}
+            height={d.h}
+            fill={d.color}
+            opacity={d.opacity}
+            style={{ mixBlendMode: 'screen' }}
+          />
+        );
+      case 'ascii':
+        return (
+          <text
+            key={i}
+            x={d.x}
+            y={d.y}
+            fontFamily="Courier New, monospace"
+            fontSize="11"
+            fill={d.color}
+            opacity={d.opacity}
+            style={{ mixBlendMode: 'screen' }}
+          >
+            {d.text}
+          </text>
+        );
+      case 'crosshair':
+        return (
+          <g
+            key={i}
+            stroke={d.color}
+            strokeWidth="0.8"
+            fill="none"
+            opacity="0.75"
+            style={{ mixBlendMode: 'screen' }}
+          >
+            <circle cx={d.cx} cy={d.cy} r={d.r} />
+            <line x1={d.cx - d.r - 10} y1={d.cy} x2={d.cx - d.r + 5} y2={d.cy} />
+            <line x1={d.cx + d.r - 5} y1={d.cy} x2={d.cx + d.r + 10} y2={d.cy} />
+            <line x1={d.cx} y1={d.cy - d.r - 10} x2={d.cx} y2={d.cy - d.r + 5} />
+            <line x1={d.cx} y1={d.cy + d.r - 5} x2={d.cx} y2={d.cy + d.r + 10} />
+          </g>
+        );
+      case 'corner':
+        return (
+          <g key={i} stroke={d.color} strokeWidth="1" fill="none" opacity="0.7">
+            <path d="M60 60 L60 40 L100 40" />
+            <path d={`M${VIEWBOX_W - 60} 40 L${VIEWBOX_W - 40} 40 L${VIEWBOX_W - 40} 80`} />
+            <path d={`M60 ${VIEWBOX_H - 60} L60 ${VIEWBOX_H - 40} L100 ${VIEWBOX_H - 40}`} />
+            <path
+              d={`M${VIEWBOX_W - 60} ${VIEWBOX_H - 40} L${VIEWBOX_W - 40} ${VIEWBOX_H - 40} L${VIEWBOX_W - 40} ${VIEWBOX_H - 80}`}
             />
-          );
-        case 'glitch':
-          return (
-            <rect
-              key={i}
-              x={d.x}
-              y={d.y}
-              width={d.w}
-              height={d.h}
-              fill={d.color}
-              opacity={d.opacity}
-              style={{ mixBlendMode: 'screen' }}
-            />
-          );
-        case 'ascii':
-          return (
-            <text
-              key={i}
-              x={d.x}
-              y={d.y}
-              fontFamily="Courier New, monospace"
-              fontSize="11"
-              fill={d.color}
-              opacity={d.opacity}
-              style={{ mixBlendMode: 'screen' }}
-            >
-              {d.text}
-            </text>
-          );
-        case 'crosshair':
-          return (
-            <g
-              key={i}
-              stroke={d.color}
-              strokeWidth="0.8"
-              fill="none"
-              opacity="0.75"
-              style={{ mixBlendMode: 'screen' }}
-            >
-              <circle cx={d.cx} cy={d.cy} r={d.r} />
-              <line x1={d.cx - d.r - 10} y1={d.cy} x2={d.cx - d.r + 5} y2={d.cy} />
-              <line x1={d.cx + d.r - 5} y1={d.cy} x2={d.cx + d.r + 10} y2={d.cy} />
-              <line x1={d.cx} y1={d.cy - d.r - 10} x2={d.cx} y2={d.cy - d.r + 5} />
-              <line x1={d.cx} y1={d.cy + d.r - 5} x2={d.cx} y2={d.cy + d.r + 10} />
-            </g>
-          );
-        case 'corner':
-          return (
-            <g key={i} stroke={d.color} strokeWidth="1" fill="none" opacity="0.7">
-              <path d="M60 60 L60 40 L100 40" />
-              <path d={`M${VIEWBOX_W - 60} 40 L${VIEWBOX_W - 40} 40 L${VIEWBOX_W - 40} 80`} />
-              <path d={`M60 ${VIEWBOX_H - 60} L60 ${VIEWBOX_H - 40} L100 ${VIEWBOX_H - 40}`} />
-              <path
-                d={`M${VIEWBOX_W - 60} ${VIEWBOX_H - 40} L${VIEWBOX_W - 40} ${VIEWBOX_H - 40} L${VIEWBOX_W - 40} ${VIEWBOX_H - 80}`}
+          </g>
+        );
+      case 'torn':
+        return (
+          <polygon
+            key={i}
+            points={d.points}
+            fill={d.color}
+            opacity={d.opacity}
+            style={{ mixBlendMode: 'screen' }}
+          />
+        );
+      case 'splatter':
+        return (
+          <ellipse
+            key={i}
+            cx={d.cx}
+            cy={d.cy}
+            rx={d.rx}
+            ry={d.ry}
+            fill={d.color}
+            opacity={d.opacity}
+            style={{ mixBlendMode: 'screen' }}
+          />
+        );
+      case 'splash':
+        return (
+          <g key={i} fill={d.color} style={{ mixBlendMode: 'screen' }}>
+            {d.dots.map((dot, j) => (
+              <circle
+                key={j}
+                cx={dot.cx}
+                cy={dot.cy}
+                r={dot.r}
+                opacity={dot.opacity}
               />
-            </g>
-          );
-        case 'torn':
-          return (
-            <polygon
-              key={i}
-              points={d.points}
-              fill={d.color}
-              opacity={d.opacity}
-              style={{ mixBlendMode: 'screen' }}
-            />
-          );
-        case 'splatter':
-          return (
-            <ellipse
-              key={i}
-              cx={d.cx}
-              cy={d.cy}
-              rx={d.rx}
-              ry={d.ry}
-              fill={d.color}
-              opacity={d.opacity}
-              style={{ mixBlendMode: 'screen' }}
-            />
-          );
-        case 'splash':
-          return (
-            <g key={i} fill={d.color} style={{ mixBlendMode: 'screen' }}>
-              {d.dots.map((dot, j) => (
-                <circle
-                  key={j}
-                  cx={dot.cx}
-                  cy={dot.cy}
-                  r={dot.r}
-                  opacity={dot.opacity}
-                />
-              ))}
-            </g>
-          );
-        case 'darkStreak':
-          // Rendered via CSS mask on the wrapper, not painted here.
-          return null;
-        case 'dropout':
-          return (
-            <rect
-              key={i}
-              x={0}
-              y={d.y}
-              width={VIEWBOX_W}
-              height={d.h}
-              fill="#000"
-              opacity={0.7}
-              style={{ mixBlendMode: 'multiply' }}
-            />
-          );
-      }
-    };
+            ))}
+          </g>
+        );
+      case 'darkStreak':
+        // Rendered via CSS mask on the wrapper, not painted here.
+        return null;
+      case 'dropout':
+        return (
+          <rect
+            key={i}
+            x={0}
+            y={d.y}
+            width={VIEWBOX_W}
+            height={d.h}
+            fill="#000"
+            opacity={0.7}
+            style={{ mixBlendMode: 'multiply' }}
+          />
+        );
+    }
+  };
 
   const warpId = `gc-warp-${data.warpSeed}`;
   const warpTightId = `gc-warp-tight-${data.warpSeed}`;
@@ -680,7 +680,7 @@ const Overlay = ({ data }: { data: InstanceData }) => {
         maskRepeat: 'no-repeat',
         WebkitMaskRepeat: 'no-repeat',
         mixBlendMode: 'color-dodge',
-        filter: 'blur(6px)',
+        filter: 'blur(6px)'
       }}
       aria-hidden="true"
     >
@@ -797,18 +797,20 @@ export interface GrungeCanvasProps {
   /** Whether the rAF loop runs. False renders one static frame. */
   animate?: boolean;
   className?: string;
+  disableSvg?: boolean;
 }
 
 const PALETTE_KEYS = Object.keys(PALETTES) as PaletteKey[];
 
 export const GrungeCanvas = ({
-  width = 1024,
-  height = 576,
-  seed,
-  palette,
-  animate = true,
-  className,
-}: GrungeCanvasProps = {}) => {
+                               width = 1024,
+                               height = 576,
+                               seed,
+                               palette,
+                               animate = true,
+                               className,
+                               disableSvg
+                             }: GrungeCanvasProps = {}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Stabilize seed and palette once per mount. Avoids re-creating WebGL state
@@ -817,12 +819,10 @@ export const GrungeCanvas = ({
     () => seed ?? Math.floor(Math.random() * 1e9),
     // Intentionally only on mount — parent re-renders shouldn't churn the
     // scene. Pass a different React key to reset.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
   const stablePalette = useMemo(
     () => palette ?? PALETTE_KEYS[Math.floor(Math.random() * PALETTE_KEYS.length)],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -927,10 +927,12 @@ export const GrungeCanvas = ({
           display: 'block',
           width: '100%',
           height: '100%',
-          pointerEvents: 'none',
+          pointerEvents: 'none'
         }}
       />
-      <Overlay data={data} />
+      {!disableSvg &&
+        <Overlay data={data} />
+      }
     </div>
   );
 };

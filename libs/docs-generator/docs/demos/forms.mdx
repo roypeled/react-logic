@@ -1,0 +1,65 @@
+---
+sidebar_position: 5
+---
+
+import SourceLink from '@site/src/components/SourceLink';
+
+# Forms — demo
+
+Signup form covering every input kind, the built-in validators, a nested address group, and the `Form.inputs` sugar. The submitted typed values echo back on success.
+
+## What it shows
+
+- Text fields with `required`, `minLength`, `maxLength`, `pattern`, `email`.
+- Number field with `parse: Number`, `min`, `max`, `integer`.
+- `<select>` validated with `oneOf` (and narrowed via `as 'US' | 'UK' | 'CA'`).
+- Checkbox with `required` (rejects unchecked).
+- Nested group `address: formGroup({ street, city, zip })` — validators run independently per leaf, errors keyed per field path.
+- `<Form.inputs.field />` for each — no `bind` spread.
+- Per-validator-name error display, gated on `touched` so the user isn't yelled at before they type.
+
+## The logic
+
+```ts
+import {
+  email, formGroup, formState, type FormValues,
+  integer, max, maxLength, min, minLength, oneOf, pattern, required,
+} from '@react-logic/utils';
+
+class SignupLogic {
+  form = formState({
+    name:    { validators: [required(), minLength(2), maxLength(40)] },
+    email:   { validators: [required(), email()] },
+    password: {
+      validators: [
+        required(), minLength(8),
+        pattern(/[A-Z]/, 'At least one uppercase'),
+        pattern(/\d/,    'At least one digit'),
+      ],
+    },
+    age:     { initial: 18, parse: Number, validators: [required(), min(18), max(120), integer()] },
+    country: { initial: '' as '' | 'US' | 'UK' | 'CA', kind: 'select',
+               validators: [oneOf(['US', 'UK', 'CA'] as const)] },
+    agree:   { kind: 'checkbox', validators: [required('You must agree')] },
+    address: formGroup({
+      street: { validators: [required()] },
+      city:   { validators: [required()] },
+      zip:    { validators: [required(), pattern(/^\d{5}$/, 'Five digits')] },
+    }),
+  });
+
+  submit(values: FormValues<typeof this.form>) {
+    // … typed snapshot
+  }
+}
+```
+
+`<form noValidate>` is the default, so browser pop-ups don't fight your JS messages.
+
+## Run it
+
+```sh
+nx serve demo-forms
+```
+
+<SourceLink path="demos/forms">View source on GitHub →</SourceLink>

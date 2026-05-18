@@ -1,0 +1,54 @@
+.card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.row label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #4a4a6a;
+}
+
+.select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #d8d8e4;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.state {
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f7f7fb;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.error {
+  color: #c0392b;
+}
+
+.label {
+  color: #6b6b85;
+  font-weight: 600;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 0.25rem 1rem;
+  font-size: 0.95rem;
+}
+
+.detail .label {
+  font-size: 0.85rem;
+}

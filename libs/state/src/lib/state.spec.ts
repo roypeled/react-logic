@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { asyncState, computedState, effect, state } from './state';
+import { batch, computedState, effect, endBatch, startBatch, state } from './state';
 
 describe('state', () => {
   it('reads and writes a value', () => {
@@ -123,28 +123,142 @@ describe('effect — cleanup callback', () => {
   });
 });
 
-describe('asyncState', () => {
-  it('starts as undefined and resolves to the awaited value', async () => {
-    const value = asyncState(async () => {
-      return 42;
-    });
-
-    expect(value()).toBeUndefined();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(value()).toBe(42);
+describe('computedState — input variant', () => {
+  it('input defaults to undefined when no default-arg is declared', () => {
+    const pattern = computedState((q: string | undefined) =>
+      q ? new RegExp(q, 'i') : null
+    );
+    expect(pattern()).toBeNull();
+    pattern('foo');
+    expect(pattern()).toBeInstanceOf(RegExp);
+    expect((pattern() as RegExp).source).toBe('foo');
   });
 
-  it('triggers reactive effects when it resolves', async () => {
-    const value = asyncState(async () => 'hello');
-    const seen: (string | undefined)[] = [];
+  it('default-arg syntax seeds the first read', () => {
+    const upper = computedState((s = 'hi') => s.toUpperCase());
+    expect(upper()).toBe('HI');
+    upper('bye');
+    expect(upper()).toBe('BYE');
+  });
+
+  it('triggers reactive effects when the input changes', () => {
+    const doubled = computedState((n = 1) => n * 2);
+    const seen: number[] = [];
     const stop = effect(() => {
-      seen.push(value());
+      seen.push(doubled());
+    });
+    doubled(5);
+    doubled(7);
+    stop();
+    expect(seen).toEqual([2, 10, 14]);
+  });
+
+  it('only recomputes when the input actually changes', () => {
+    const fn = vi.fn((n = 1) => n * 2);
+    const c = computedState(fn);
+    c();
+    c();
+    c(2);
+    c();
+    c(2);
+    c();
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('plain 0-arg form still works', () => {
+    const count = state(2);
+    const c = computedState(() => count() * 3);
+    expect(c()).toBe(6);
+    count(4);
+    expect(c()).toBe(12);
+  });
+});
+
+describe('batch', () => {
+  it('coalesces multiple writes into a single effect notification', () => {
+    const a = state(1);
+    const b = state(2);
+    const seen: number[] = [];
+    const stop = effect(() => {
+      seen.push(a() + b());
     });
 
-    await new Promise((r) => setTimeout(r, 0));
+    // Without batch: two notifications.
+    a(10);
+    b(20);
+    // With batch: one notification.
+    batch(() => {
+      a(100);
+      b(200);
+    });
     stop();
 
-    expect(seen[0]).toBeUndefined();
-    expect(seen.at(-1)).toBe('hello');
+    // Initial run (1+2=3), then write to a (10+2=12), then write to b (10+20=30),
+    // then the batched pair lands as a single notification (100+200=300).
+    expect(seen).toEqual([3, 12, 30, 300]);
+  });
+
+  it('returns the callback value', () => {
+    const out = batch(() => 42);
+    expect(out).toBe(42);
+  });
+
+  it('closes the batch even if the callback throws', () => {
+    const a = state(1);
+    const seen: number[] = [];
+    const stop = effect(() => {
+      seen.push(a());
+    });
+
+    expect(() =>
+      batch(() => {
+        a(7);
+        throw new Error('boom');
+      })
+    ).toThrow('boom');
+
+    // After the throw, subsequent writes still notify normally — proves
+    // endBatch ran in the finally.
+    a(8);
+    stop();
+    expect(seen).toEqual([1, 7, 8]);
+  });
+
+  it('nests safely via the depth counter', () => {
+    const a = state(0);
+    const seen: number[] = [];
+    const stop = effect(() => {
+      seen.push(a());
+    });
+
+    batch(() => {
+      a(1);
+      batch(() => {
+        a(2);
+      });
+      // Inner endBatch did not flush — depth still > 0.
+      a(3);
+    });
+    stop();
+
+    // Initial 0, then a single batched flush at 3 (last value).
+    expect(seen).toEqual([0, 3]);
+  });
+
+  it('exposes the raw start/end pair for advanced cases', () => {
+    const a = state(0);
+    const seen: number[] = [];
+    const stop = effect(() => {
+      seen.push(a());
+    });
+
+    startBatch();
+    a(5);
+    a(6);
+    a(7);
+    endBatch();
+    stop();
+
+    expect(seen).toEqual([0, 7]);
   });
 });

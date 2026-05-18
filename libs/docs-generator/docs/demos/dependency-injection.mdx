@@ -1,0 +1,64 @@
+---
+sidebar_position: 6
+---
+
+import SourceLink from '@site/src/components/SourceLink';
+
+# Dependency injection — demo
+
+Two shops side-by-side, with a layered `<Injector>` tree showing both **sharing** (one catalog + tax rate at the outer scope) and **isolation** (one cart per shop). Adding to one cart doesn't show up in the other; changing the tax rate updates both.
+
+## What it shows
+
+- An **outer `<Injector>`** providing `CatalogService` — items + a reactive `taxRate`. Lives at the page level.
+- Two **inner `<Injector>`** subtrees, one per shop, each providing its own `CartStore`. The cart's total uses `inject(CatalogService)` to apply tax — resolution walks up through the shop scope to the page scope.
+- A `<TaxBar>` widget at the page level mutates `taxRate` on the parent service; both shops re-render because they read it transitively through their `CartStore`.
+
+## The logic
+
+```ts
+// Lives at the page-level <Injector>. Two shops share one instance.
+class CatalogService {
+  items = [/* coffee, latte, croissant */];
+  taxRate = state(0);
+  withTax(subtotal: number) {
+    return subtotal * (1 + this.taxRate());
+  }
+}
+
+// Lives at each shop's <Injector>. inject() walks UP to find CatalogService.
+class CartStore {
+  catalog  = inject(CatalogService);
+  items    = state<Item[]>([]);
+  subtotal = computedState(() => this.items().reduce((s, i) => s + i.price, 0));
+  total    = computedState(() => this.catalog.withTax(this.subtotal()));
+  add(item: Item) { this.items([...this.items(), item]); }
+}
+```
+
+```tsx
+<Injector provide={[CatalogService]}>       {/* outer scope */}
+  <TaxBar />
+  <Shop label="Shop A" />
+  <Shop label="Shop B" />
+</Injector>
+
+const Shop = ({ label }) => (
+  <Injector provide={[CartStore]}>           {/* inner scope, one per shop */}
+    <section>
+      <Header />
+      <List />
+    </section>
+  </Injector>
+);
+```
+
+Resolution walk: `<Header>`'s logic runs `inject(CartStore)`, which lands at the inner shop scope. The store's own `inject(CatalogService)` walks past the inner scope (no provider there) to the outer scope (provided). Two carts, one catalog, one tax rate.
+
+## Run it
+
+```sh
+nx serve demo-di
+```
+
+<SourceLink path="demos/di">View source on GitHub →</SourceLink>

@@ -1,0 +1,85 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d8d8e4;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  margin-bottom: 0.6rem;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 4rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #5a3cff;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  background: #d8d8e4;
+  cursor: not-allowed;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: #6b6b85;
+  margin-top: 0.5rem;
+}
+
+.status {
+  font-size: 0.85rem;
+  font-family: ui-monospace, monospace;
+  color: #4a4a6a;
+}
+
+.statusOk    { color: #2c7a4b; }
+.statusErr   { color: #c0392b; }
+.statusLoad  { color: #5a3cff; }
+.statusIdle  { color: #6b6b85; }

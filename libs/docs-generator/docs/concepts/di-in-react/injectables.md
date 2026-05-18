@@ -40,7 +40,7 @@ If you *want* per-scope instances of a class, provide it explicitly: `<Injector 
 Configuration strings, primitive values, plain functions — anything without a class identity — needs an [`InjectionToken`](/docs/api/di/classes/InjectionToken) to give it a stable token:
 
 ```ts
-import { InjectionToken } from '@react-logic/di';
+import { InjectionToken } from '@react-logic/react-logic';
 
 export const API_URL = new InjectionToken<string>('API_URL');
 

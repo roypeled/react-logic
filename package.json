@@ -71,6 +71,6 @@
   "workspaces": [
     "apps/*",
     "libs/*",
-    "demo"
+    "demos/*"
   ]
 }

@@ -34,7 +34,7 @@ import '@react-logic/di';        // default adapter is registered as a side effe
 Call `setDIAdapter(adapter)` once, *before* mounting React. Calling it later won't migrate already-constructed instances.
 
 ```ts
-import { setDIAdapter } from '@react-logic/di';
+import { setDIAdapter } from '@react-logic/react-logic';
 import { createAngularAdapter } from '@react-logic/angular-adapter';
 import { createEnvironmentInjector, Injector } from '@angular/core';
 

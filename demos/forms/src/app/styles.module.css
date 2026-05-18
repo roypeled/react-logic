@@ -1,0 +1,110 @@
+.card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.9rem;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a4a6a;
+}
+
+.field input,
+.field select {
+  padding: 0.5rem;
+  border: 1px solid #d8d8e4;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.field input:invalid {
+  border-color: #d8d8e4;
+}
+
+.errors {
+  font-size: 0.78rem;
+  color: #c0392b;
+  list-style: none;
+  padding: 0;
+  margin: 0.15rem 0 0;
+}
+
+.fieldset {
+  border: 1px solid #d8d8e4;
+  border-radius: 6px;
+  padding: 0.5rem 1rem 0.1rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.fieldset legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a4a6a;
+  padding: 0 0.4rem;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.btn {
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: 6px;
+  background: #5a3cff;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.btn:disabled {
+  background: #d8d8e4;
+  cursor: not-allowed;
+}
+
+.state {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f5f5fa;
+  border: 1px solid #d8d8e4;
+  border-radius: 8px;
+}
+.state h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555;
+}
+.state pre {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  max-height: 22rem;
+  overflow: auto;
+}
+
+.submitted {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f3f9f4;
+  border: 1px solid #b8e0c2;
+  border-radius: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
