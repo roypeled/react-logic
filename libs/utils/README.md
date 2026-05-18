@@ -1,7 +1,22 @@
 # @react-logic/utils
 
-Optional helper state utilities — async producers, forms, etc. Lives outside the core so the base bundle stays small.
+Optional helpers — `asyncState`, `fetchState` (+ verb presets), `formState` / `useForm`. Lives outside the core so the base bundle stays small.
 
-## Running unit tests
+## Install
 
-Run `nx test @react-logic/utils` to execute the unit tests via [Vitest](https://vitest.dev/).
+```sh
+npm install @react-logic/utils
+```
+
+Requires the core packages (install via `@react-logic/react-logic` or individually).
+
+## Develop (in this repo)
+
+```sh
+npm install
+npx nx test @react-logic/utils     # vitest
+npx nx build @react-logic/utils
+npx nx lint @react-logic/utils
+```
+
+See the [root README](../../README.md) for the full overview and runnable demos.

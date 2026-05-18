@@ -126,6 +126,19 @@ npx nx serve demo-reactive-state
 The corresponding **explanation page** lives at `/docs/demos/<name>` in the docs site.
 
 
+## Docs site
+
+The documentation site is a Docusaurus app under `libs/docs-generator`.
+
+```sh
+npm install
+npx nx serve docs-generator        # local dev server on :3000
+npx nx build docs-generator        # static build into <repo>/docs
+```
+
+On `push` to `main` the [`deploy-docs` workflow](.github/workflows/deploy-docs.yml) builds and publishes the site to GitHub Pages.
+
+
 ## License
 
 MIT

@@ -1,7 +1,26 @@
 # @react-logic/state
 
-This library was generated with [Nx](https://nx.dev).
+Signal utilities (`state`, `computedState`, `effect`, `batch`). One of the three required packages.
 
-## Running unit tests
+## Install
 
-Run `nx test @react-logic/state` to execute the unit tests via [Vitest](https://vitest.dev/).
+```sh
+npm install @react-logic/state
+```
+
+Or pull all required packages in one shot:
+
+```sh
+npm install @react-logic/react-logic
+```
+
+## Develop (in this repo)
+
+```sh
+npm install
+npx nx test @react-logic/state     # vitest
+npx nx build @react-logic/state
+npx nx lint @react-logic/state
+```
+
+See the [root README](../../README.md) for the full overview and runnable demos.
