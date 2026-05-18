@@ -148,6 +148,11 @@ class ItemsLogic {
 const WikiList = () => {
   const l = useLogic(ItemsLogic);
   const filtered = l.filtered();
+
+  const onFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    l.filtered(e.target.value);
+  };
+
   return (
     <>
       <select
@@ -164,7 +169,7 @@ const WikiList = () => {
       <input
         className={styles.demoInput}
         placeholder="filter…"
-        onChange={(e) => l.filtered(e.target.value)}
+        onChange={onFilterChange}
       />
       <ul className={styles.demoList}>
         {filtered.length === 0 ? (

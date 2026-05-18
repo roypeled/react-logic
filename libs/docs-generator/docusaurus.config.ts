@@ -44,6 +44,17 @@ const config: Config = {
   ],
 
   plugins: [
+    // Resolve @react-logic/* to source via the custom exports condition,
+    // matching what vite/vitest do. Without this, webpack bundles stale
+    // dist/ output — breaks live reload and source maps in the demo.
+    () => ({
+      name: 'react-logic-resolve-source',
+      configureWebpack: () => ({
+        resolve: {
+          conditionNames: ['@react-logic/source', '...'],
+        },
+      }),
+    }),
     [
       'docusaurus-plugin-typedoc',
       {

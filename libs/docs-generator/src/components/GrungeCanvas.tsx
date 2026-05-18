@@ -1,4 +1,28 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+const usePrefersReducedMotion = (): boolean => {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return reduced;
+};
+
+// Safari rasterizes feDisplacementMap on the CPU and tanks the framerate
+// when its output is re-rendered every animation frame. Detect Safari (not
+// Chrome/Android which also include "Safari" in the UA) so we can drop the
+// SMIL animation only where it actually hurts.
+const useIsSafari = (): boolean => {
+  const [isSafari, setIsSafari] = useState(false);
+  useEffect(() => {
+    setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
+  }, []);
+  return isSafari;
+};
 
 /* =========================================================================
  *  Y2K Tech-Grunge Background — WebGL canvas variant.
@@ -510,7 +534,7 @@ const buildInstance = (seed: number, palette: PaletteKey): InstanceData => {
 // Filters here run once at rasterization — no per-frame cost. They give the
 // overlay the same torn/wobbly feel as the original SVG variant without the
 // animated SMIL re-rasterization that was killing perf at 4K.
-const Overlay = ({ data }: { data: InstanceData }) => {
+const Overlay = ({ data, animateDrift }: { data: InstanceData; animateDrift: boolean }) => {
   // Split decorations into layers so we can apply different filters.
   const torn = data.decorations.filter((d) => d.kind === 'torn');
   const splatters = data.decorations.filter((d) => d.kind === 'splatter');
@@ -732,22 +756,27 @@ const Overlay = ({ data }: { data: InstanceData }) => {
       {/* The CSS mask on the <svg> root cuts the diagonal bands out of the
           entire overlay, revealing the WebGL canvas underneath cleanly. */}
 
-      {/* Heavy-warp: splatters (blurred) + torn polygons. */}
+      {/* Heavy-warp: splatters (blurred) + torn polygons.
+          SMIL animateTransform is gated on `animateDrift` — disabled in
+          Safari, which rasterizes feDisplacementMap + feGaussianBlur on
+          the CPU and re-rasters every animated frame, tanking framerate. */}
       <g filter={`url(#${warpId})`}>
         <g filter={`url(#${blurHeavyId})`}>{splatters.map(renderDecoration)}</g>
         <g>
           {torn.map(renderDecoration)}
-          <animateTransform
-            attributeName="transform"
-            attributeType="XML"
-            type="translate"
-            values="0,0; 380,-220; -280,260; 420,140; -220,-300; 0,0"
-            keyTimes="0; 0.2; 0.45; 0.7; 0.9; 1"
-            dur="180s"
-            repeatCount="indefinite"
-            calcMode="spline"
-            keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-          />
+          {animateDrift && (
+            <animateTransform
+              attributeName="transform"
+              attributeType="XML"
+              type="translate"
+              values="0,0; 380,-220; -280,260; 420,140; -220,-300; 0,0"
+              keyTimes="0; 0.2; 0.45; 0.7; 0.9; 1"
+              dur="180s"
+              repeatCount="indefinite"
+              calcMode="spline"
+              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+            />
+          )}
         </g>
       </g>
 
@@ -807,11 +836,15 @@ export const GrungeCanvas = ({
                                height = 576,
                                seed,
                                palette,
-                               animate = true,
+                               animate: animateProp = true,
                                className,
                                disableSvg
                              }: GrungeCanvasProps = {}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const isSafari = useIsSafari();
+  const animate = animateProp && !prefersReducedMotion;
+  const animateDrift = animate && !isSafari;
 
   // Stabilize seed and palette once per mount. Avoids re-creating WebGL state
   // when the parent re-renders.
@@ -931,7 +964,7 @@ export const GrungeCanvas = ({
         }}
       />
       {!disableSvg &&
-        <Overlay data={data} />
+        <Overlay data={data} animateDrift={animateDrift} />
       }
     </div>
   );

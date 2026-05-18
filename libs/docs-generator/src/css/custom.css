@@ -87,7 +87,7 @@ body {
 
   &::after{
     opacity: 0.8;
-    transition: all 300ms;
+    transition: background 300ms;
     content: '';
     background: inherit;
     position-anchor: --button;
@@ -108,6 +108,8 @@ body {
     mask-border-width: 0 20px 0 20px;
   }
 
+  /* Axis list must be identical in tag order between base and :hover for
+     Safari to interpolate — otherwise the transition is discrete and snaps. */
   font-variation-settings:
     "GRAD" 150, "XOPQ" 175, "XTRA" 407, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 470, "YTUC" 760, "wght" 200, "wdth" 117, "slnt" -10
 ;
@@ -116,7 +118,7 @@ body {
     background: transparent;
 
     font-variation-settings:
-      "slnt" 0, "GRAD" 150, "XOPQ" 128, "XTRA" 603, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 570, "YTUC" 760, "wght" 200, "wdth" 117, "slnt" 0
+      "GRAD" 150, "XOPQ" 128, "XTRA" 603, "YOPQ" 53, "YTAS" 854, "YTDE" -305, "YTFI" 560, "YTLC" 570, "YTUC" 760, "wght" 200, "wdth" 117, "slnt" 0
   ;
     &::after {
       opacity: 1;
@@ -129,6 +131,18 @@ body {
       background: var(--ifm-color-emphasis-1000);
     }
 
+  }
+}
+
+/* Safari only interpolates standardized font-variation axes (wght/wdth/slnt).
+   For Roboto Flex's custom axes (XOPQ/XTRA/YTLC/etc.) the transition snaps
+   through default mid-tween. Disable transitions on these elements in Safari
+   (and iOS WebKit browsers) — hover state still applies, instantly. */
+@supports (font: -apple-system-body) {
+  .button--lg,
+  h1, h2, h3, h4, h5, h6,
+  em, .navbar__brand {
+    transition: none !important;
   }
 }
 
