@@ -952,7 +952,6 @@ export function GrungeBackgroundOnly({
     // Intentionally empty deps — create the blob exactly once per mount and
     // ignore prop churn afterwards. Remount the component (new React key) to
     // change seed/palette at runtime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (raster && blobUrl) {

@@ -5,7 +5,6 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 // categories (Hooks / Errors / Adapter / ...) merging exports across all
 // packages — readers don't need to know which package an export lives in
 // to find it.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const typedocSidebar = require('./docs/api/typedoc-sidebar.cjs');
 
 interface SidebarItem {

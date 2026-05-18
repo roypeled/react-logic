@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
@@ -6,7 +5,6 @@ import Layout from '@theme/Layout';
 import { computedState, inject, state, useLogic } from '@react-logic/react-logic';
 import { fetchState } from '@react-logic/utils';
 import styles from './index.module.css';
-import { GrungeBackgroundOnly } from './GrungeBackground';
 import { GrungeCanvas } from '../components/GrungeCanvas';
 
 const features = [
