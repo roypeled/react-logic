@@ -227,10 +227,9 @@ const FRAGMENT_SHADER = `
       col = 1.0 - (1.0 - col) * (1.0 - u_orbColor[i] * intensity);
     }
 
-    // Scanlines — horizontal dark stripes, slowly scrolling. ~0.4 px/s so
-    // the lines drift rather than flash past.
-    float scrollPx = u_time * u_animate * 0.4;
-    float scanY = mod(gl_FragCoord.y + scrollPx, 3.0);
+    // Scanlines — static. Scrolling them at any rate interacts with the
+    // pixel grid and with grain quantization, producing perceived pulses.
+    float scanY = mod(gl_FragCoord.y, 3.0);
     float scan = step(scanY, 1.5) * 0.28;
     col *= 1.0 - scan;
 
@@ -240,10 +239,16 @@ const FRAGMENT_SHADER = `
     vec3 chromaCol = vec3(0.9 * chroma, 0.2 * chroma, 1.1 * chroma);
     col = col * (1.0 - 0.18) + chromaCol * 0.18;
 
-    // Fine grain — quantized to 24fps so the noise reshuffles at film/TV
-    // cadence instead of the display's native rate. Reads as film grain.
-    float grainT = floor(u_time * u_animate * 24.0) / 24.0;
-    float grain = hash(pos + grainT * 13.0) - 0.5;
+    // Fine grain — two random samples interpolated smoothly. No step
+    // quantization (which beats against the display refresh) and no full
+    // 60Hz randomness (which strobes). Each pixel morphs continuously
+    // between two random values at ~12 ticks/sec.
+    float gt = u_time * u_animate * 12.0;
+    float gi = floor(gt);
+    float gf = smoothstep(0.0, 1.0, fract(gt));
+    float g0 = hash(pos + gi * 13.0) - 0.5;
+    float g1 = hash(pos + (gi + 1.0) * 13.0) - 0.5;
+    float grain = mix(g0, g1, gf);
     col += grain * 0.07;
 
     // Vignette
