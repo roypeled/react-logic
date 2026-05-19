@@ -857,22 +857,21 @@ export const GrungeCanvas = ({
   const animate = animateProp && !prefersReducedMotion;
   const animateDrift = animate && !isSafari;
 
-  // `useId` is stable across server and client, unlike `Math.random()`.
-  // Hash it into the integer seed the scene generator expects. Hydration-safe.
+  // SSR + first client render use a deterministic seed from `useId` so the
+  // hydrated DOM matches the server-rendered one. After hydration we re-roll
+  // to a real random value, which gives a fresh palette/layout on every page
+  // load. (`useId` alone is stable across page loads on this SSG site, so the
+  // scene would never change.)
   const reactId = useId();
-  const idSeed = useMemo(() => hashStringToInt(reactId), [reactId]);
+  const [seedState, setSeedState] = useState<number>(() => hashStringToInt(reactId));
+  useEffect(() => {
+    setSeedState(Math.floor(Math.random() * 0xffffffff));
+  }, []);
 
-  // Stabilize seed and palette once per mount. Avoids re-creating WebGL state
-  // when the parent re-renders.
-  const stableSeed = useMemo(
-    () => seed ?? idSeed,
-    // Intentionally only on mount — parent re-renders shouldn't churn the
-    // scene. Pass a different React key to reset.
-    []
-  );
+  const stableSeed = seed ?? seedState;
   const stablePalette = useMemo(
-    () => palette ?? PALETTE_KEYS[idSeed % PALETTE_KEYS.length],
-    []
+    () => palette ?? PALETTE_KEYS[seedState % PALETTE_KEYS.length],
+    [palette, seedState]
   );
 
   // Single source of truth for the per-mount randomized data. Used by both
