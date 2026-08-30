@@ -52,3 +52,9 @@ vitest.config.*.timestamp*
 libs/docs-generator/build
 libs/docs-generator/.docusaurus
 libs/docs-generator/docs/api
+
+.claude/worktrees
+.claude/settings.local.json
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs
