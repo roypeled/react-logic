@@ -1,6 +1,6 @@
 {
   "name": "@react-logic/state",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
     }
   },
   "dependencies": {
-    "@react-logic/di": "0.1.4"
+    "@react-logic/di": "0.1.5"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
