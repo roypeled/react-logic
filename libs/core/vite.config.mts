@@ -36,7 +36,7 @@ export default defineConfig(() => ({
       formats: ['es' as const],
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime', '@react-logic/di'],
+      external: ['react', 'react-dom', 'react/jsx-runtime', '@react-logic/di', 'alien-signals'],
       output: {
         entryFileNames: '[name].js',
       },
