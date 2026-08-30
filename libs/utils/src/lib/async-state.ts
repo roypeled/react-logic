@@ -37,8 +37,10 @@ import { effect as rawEffect, signal } from 'alien-signals';
 export const asyncState = <T>(fn: () => Promise<T>): (() => T | undefined) => {
   const value = signal<T | undefined>(undefined);
 
-  rawEffect(async () => {
-    value(await fn());
+  rawEffect(() => {
+    void (async () => {
+      value(await fn());
+    })();
   });
 
   return value;
