@@ -16,11 +16,26 @@ import { PropsWithChildren } from 'react';
 export type Class<T> = new () => T;
 
 /**
- * Anything that can identify a dependency in the DI container — either a
- * concrete class (used as both token and constructor) or an `InjectionToken`
- * for opaque/value dependencies.
+ * A class used only as an identity, never constructed by the container — so it may be abstract.
  *
- * Using a class as a token gives you both the identity and a default
+ * Angular pairs an abstract base with `{ provide: Base, useClass: Impl }` routinely, and an
+ * adapter backed by Angular's DI resolves such tokens natively. The container only needs a
+ * constructable `Class<T>` where it actually builds something, which is the `useClass` position.
+ *
+ * A token like this must always have a provider: with no provider the default adapter has
+ * nothing to construct.
+ *
+ * @typeParam T - The instance type the token resolves to.
+ * @category Types
+ */
+export type AbstractClass<T> = abstract new (...args: never[]) => T;
+
+/**
+ * Anything that can identify a dependency in the DI container — a concrete
+ * class (used as both token and constructor), an abstract class used purely as
+ * an identity, or an `InjectionToken` for opaque/value dependencies.
+ *
+ * Using a concrete class as a token gives you both the identity and a default
  * implementation in one — `inject(MyService)` works without any explicit
  * provider registration. `InjectionToken` is needed when the dependency has
  * no class identity (a config string, a function, a primitive value).
@@ -28,7 +43,7 @@ export type Class<T> = new () => T;
  * @typeParam T - The type the token resolves to.
  * @category Types
  */
-export type InjectionType<T> = InjectionToken<T> | Class<T>;
+export type InjectionType<T> = InjectionToken<T> | Class<T> | AbstractClass<T>;
 
 type BaseProvider<T> = {
     provide: InjectionType<T>,
@@ -38,8 +53,19 @@ type ValueProvider<T> = {
     useValue: T,
 } & BaseProvider<T>;
 
+/**
+ * A class an adapter can construct. The built-in container calls `new token()` and so needs a
+ * zero-argument constructor, but an adapter backed by a host DI delegates construction to that
+ * host — Angular resolves constructor parameters itself — so a parameterised constructor is
+ * legitimate there and the type must not reject it.
+ *
+ * @typeParam T - The instance type the constructor produces.
+ * @category Types
+ */
+export type ConstructableClass<T> = Class<T> | (new (...args: never[]) => T);
+
 type ClassProvider<T> = {
-    useClass: Class<T>,
+    useClass: ConstructableClass<T>,
 } & BaseProvider<T>;
 
 type FactoryProvider<T> = {

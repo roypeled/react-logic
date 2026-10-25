@@ -32,6 +32,11 @@ export const createAngularAdapter = (
 ): DIAdapter<EnvironmentInjector> => {
   let collecting: unknown[] | null = null;
 
+  // Angular throws NG0205 when an injector is destroyed twice and offers no way to ask whether
+  // one already has been. React calls every effect cleanup twice under StrictMode, so a scope
+  // disposed on the simulated unmount is disposed again on the real one.
+  const disposedScopes = new WeakSet<EnvironmentInjector>();
+
   const adapterInject = <T>(token: InjectionType<T>, optional?: boolean): T | null => {
     const result = (optional
       ? ngInject(token as never, { optional: true })
@@ -53,6 +58,8 @@ export const createAngularAdapter = (
     },
 
     disposeScope(scope) {
+      if (disposedScopes.has(scope)) return;
+      disposedScopes.add(scope);
       scope.destroy();
     },
 
@@ -71,10 +78,16 @@ export const createAngularAdapter = (
       collecting = injected;
       try {
         const result = runInInjectionContext(transient, fn);
+        let isDisposed = false;
         return {
           result,
           injected,
-          dispose: () => transient.destroy(),
+          // Idempotent for the same reason disposeScope is — see disposedScopes above.
+          dispose: () => {
+            if (isDisposed) return;
+            isDisposed = true;
+            transient.destroy();
+          },
         };
       } finally {
         collecting = prev;
