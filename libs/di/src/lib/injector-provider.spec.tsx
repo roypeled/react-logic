@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { StrictMode, useState } from 'react';
+import { act, render, screen } from '@testing-library/react';
 import { Injector, useInjector } from './injector-provider';
 import { InjectionToken } from './injection-token';
 
@@ -17,6 +18,60 @@ describe('Injector / useInjector', () => {
       </Injector>
     );
     expect(screen.getByText('hi')).toBeTruthy();
+  });
+
+  // StrictMode runs the effect cleanup on a tree it then keeps rendering, so the scope created on
+  // mount is disposed while still in use. A re-render afterwards must not resolve against it.
+  it('re-renders after StrictMode disposes the mount scope', () => {
+    const TOKEN = new InjectionToken<string>('STRICT');
+    let bump = () => undefined as void;
+
+    const Child = () => {
+      const [count, setCount] = useState(0);
+      bump = () => setCount((current) => current + 1);
+      return <span>{`${useInjector(TOKEN)}-${count}`}</span>;
+    };
+
+    render(
+      <StrictMode>
+        <Injector provide={[{ provide: TOKEN, useValue: 'alive' }]}>
+          <Child />
+        </Injector>
+      </StrictMode>
+    );
+
+    expect(screen.getByText('alive-0')).toBeTruthy();
+    expect(() => act(() => bump())).not.toThrow();
+    expect(screen.getByText('alive-1')).toBeTruthy();
+  });
+
+  // The other side of the same branch: a changed `provide` must swap the scope, not be mistaken
+  // for a StrictMode remount and left on the old one.
+  it('swaps the scope when provide changes while mounted', () => {
+    const TOKEN = new InjectionToken<string>('SWAP');
+    let setValue = (_: string) => undefined as void;
+
+    const Child = () => <span>{useInjector(TOKEN)}</span>;
+
+    const Host = () => {
+      const [value, set] = useState('first');
+      setValue = set;
+      return (
+        <Injector provide={[{ provide: TOKEN, useValue: value }]}>
+          <Child />
+        </Injector>
+      );
+    };
+
+    render(
+      <StrictMode>
+        <Host />
+      </StrictMode>
+    );
+
+    expect(screen.getByText('first')).toBeTruthy();
+    act(() => setValue('second'));
+    expect(screen.getByText('second')).toBeTruthy();
   });
 
   it('child Injector overrides parent provider', () => {
