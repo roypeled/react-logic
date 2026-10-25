@@ -110,6 +110,36 @@ describe('createAngularAdapter', () => {
     expect(serviceCleanup).toHaveBeenCalledOnce();
   });
 
+  // React runs every effect cleanup twice under StrictMode, so both teardowns are called twice
+  // for one mount. Angular throws NG0205 on a second destroy.
+  it('disposing twice is a no-op rather than an error', () => {
+    const { adapter, root } = buildAdapter();
+    const serviceCleanup = vi.fn();
+    const logicCleanup = vi.fn();
+
+    @Injectable()
+    class Service {
+      constructor() {
+        onDestroy(serviceCleanup);
+      }
+    }
+
+    const scope = adapter.createScope([{ provide: Service, useClass: Service }], root);
+    const built = adapter.construct(scope, () => {
+      adapter.inject(Service);
+      onDestroy(logicCleanup);
+      return null;
+    });
+
+    built.dispose();
+    expect(() => built.dispose()).not.toThrow();
+    expect(logicCleanup).toHaveBeenCalledOnce();
+
+    adapter.disposeScope(scope);
+    expect(() => adapter.disposeScope(scope)).not.toThrow();
+    expect(serviceCleanup).toHaveBeenCalledOnce();
+  });
+
   it('returns null for an optional missing token', () => {
     const { adapter, root } = buildAdapter();
     const TOKEN = new InjectionToken<string>('MAYBE');
