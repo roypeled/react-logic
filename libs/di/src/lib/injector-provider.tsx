@@ -1,5 +1,5 @@
 import './default-adapter';
-import { createContext, FunctionComponent, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
+import { createContext, FunctionComponent, useContext, useEffect, useMemo, useRef } from 'react';
 import { Class, InjectionType, InjectorProviderProps, Provider, ProviderEntry } from './types';
 import { getDIAdapter } from './adapter';
 
@@ -66,33 +66,41 @@ const providerTarget = (p: Provider): unknown => {
 export const Injector: FunctionComponent<InjectorProviderProps> = ({ provide, children }) => {
   const parentScope = useContext(ScopeContext) ?? getRootScope();
   const stableProvide = useStableProviders(provide);
-  const [generation, regenerate] = useReducer((current: number) => current + 1, 0);
 
   const scope = useMemo(() => {
     if (!stableProvide) return parentScope;
     return getDIAdapter().createScope(stableProvide, parentScope);
-    // `generation` is a deliberate dependency: React's StrictMode runs the effect cleanup below on
-    // a tree it then keeps rendering, so without it this memo would keep handing out a scope that
-    // has already been disposed — and the next `useInjector` would resolve against a dead one.
-  }, [parentScope, stableProvide, generation]);
+  }, [parentScope, stableProvide]);
 
-  // Remembers the scope the last cleanup tore down, so the effect below can tell StrictMode's
-  // simulated unmount (same scope comes back, and it is now dead) from an ordinary scope
-  // replacement after `provide` changed (a different scope comes back, and it is alive).
-  const disposedScope = useRef<unknown>(undefined);
+  // Teardown is deferred by a task rather than run in the cleanup itself.
+  //
+  // StrictMode unmounts and immediately re-mounts, so a scope disposed in the cleanup is still the
+  // context value afterwards — and any child that re-renders on its own (a signal firing, say)
+  // resolves against a dead scope before this component gets a chance to build a new one. Deferring
+  // lets the re-mounted effect cancel the teardown, so the scope is never destroyed while in use.
+  //
+  // A real unmount has no re-mount to cancel it, so the scope is disposed on the next task. A
+  // changed `provide` builds a different scope, which doesn't match the pending one, so the old
+  // scope's teardown stands.
+  const pendingTeardown = useRef<{ scope: unknown; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   useEffect(() => {
     if (!stableProvide) return;
 
-    if (disposedScope.current === scope) {
-      disposedScope.current = undefined;
-      regenerate();
-      return;
+    const pending = pendingTeardown.current;
+    if (pending && pending.scope === scope) {
+      clearTimeout(pending.timer);
+      pendingTeardown.current = null;
     }
 
     return () => {
-      getDIAdapter().disposeScope(scope);
-      disposedScope.current = scope;
+      pendingTeardown.current = {
+        scope,
+        timer: setTimeout(() => {
+          getDIAdapter().disposeScope(scope);
+          pendingTeardown.current = null;
+        }),
+      };
     };
   }, [scope, stableProvide]);
 

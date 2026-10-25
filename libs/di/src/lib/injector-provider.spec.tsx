@@ -3,6 +3,7 @@ import { StrictMode, useState } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { Injector, useInjector } from './injector-provider';
 import { InjectionToken } from './injection-token';
+import { onDestroy } from './lifecycle';
 
 beforeEach(() => {
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -43,6 +44,60 @@ describe('Injector / useInjector', () => {
     expect(screen.getByText('alive-0')).toBeTruthy();
     expect(() => act(() => bump())).not.toThrow();
     expect(screen.getByText('alive-1')).toBeTruthy();
+  });
+
+  // The scope must outlive StrictMode's unmount/re-mount, not be rebuilt after it: a child that
+  // re-renders on its own in between would otherwise resolve against a destroyed scope.
+  it('keeps the scope alive across a StrictMode re-mount', async () => {
+    const destroyed = vi.fn();
+
+    class Service {
+      constructor() {
+        onDestroy(destroyed);
+      }
+    }
+
+    const Child = () => <span>{useInjector(Service) ? 'built' : 'no'}</span>;
+
+    render(
+      <StrictMode>
+        <Injector provide={[Service]}>
+          <Child />
+        </Injector>
+      </StrictMode>
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve));
+    });
+
+    expect(screen.getByText('built')).toBeTruthy();
+    expect(destroyed).not.toHaveBeenCalled();
+  });
+
+  it('tears the scope down once the Injector really unmounts', async () => {
+    const destroyed = vi.fn();
+
+    class Service {
+      constructor() {
+        onDestroy(destroyed);
+      }
+    }
+
+    const Child = () => <span>{useInjector(Service) ? 'built' : 'no'}</span>;
+
+    const { unmount } = render(
+      <Injector provide={[Service]}>
+        <Child />
+      </Injector>
+    );
+
+    unmount();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve));
+    });
+
+    expect(destroyed).toHaveBeenCalledOnce();
   });
 
   // The other side of the same branch: a changed `provide` must swap the scope, not be mistaken
