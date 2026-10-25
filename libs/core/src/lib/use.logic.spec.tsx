@@ -247,7 +247,7 @@ describe('useLogic — custom Injector providers', () => {
     expect(screen.getByTestId('v').textContent).toBe('null');
   });
 
-  it('disposes a service when its Injector host unmounts', () => {
+  it('disposes a service when its Injector host unmounts', async () => {
     const cleanup = vi.fn();
     class ScopedService {
       constructor() {
@@ -270,10 +270,12 @@ describe('useLogic — custom Injector providers', () => {
     );
     expect(cleanup).not.toHaveBeenCalled();
     unmount();
+    // <Injector> defers scope teardown by a task so StrictMode's re-mount can cancel it.
+    await tick();
     expect(cleanup).toHaveBeenCalledOnce();
   });
 
-  it('keeps an injected service alive when its consuming logic class is destroyed', () => {
+  it('keeps an injected service alive when its consuming logic class is destroyed', async () => {
     const cleanup = vi.fn();
     class ScopedService {
       n = state(0);
@@ -299,10 +301,11 @@ describe('useLogic — custom Injector providers', () => {
     rerender(<Host show={false} />);
     expect(cleanup).not.toHaveBeenCalled();
     unmount();
+    await tick();
     expect(cleanup).toHaveBeenCalledOnce();
   });
 
-  it('disposing a child Injector does not affect a parent-cached service', () => {
+  it('disposing a child Injector does not affect a parent-cached service', async () => {
     const childCleanup = vi.fn();
     const parentCleanup = vi.fn();
 
@@ -338,10 +341,12 @@ describe('useLogic — custom Injector providers', () => {
 
     const { rerender, unmount } = render(<Tree showChild={true} />);
     rerender(<Tree showChild={false} />);
+    await tick();
     expect(childCleanup).toHaveBeenCalledOnce();
     expect(parentCleanup).not.toHaveBeenCalled();
 
     unmount();
+    await tick();
     expect(parentCleanup).toHaveBeenCalledOnce();
   });
 
@@ -406,8 +411,9 @@ describe('useLogic — custom Injector providers', () => {
     // Logic's effect was tied to the consumer's lifetime; it must be silent.
     expect(logicLog).toEqual([0, 1]);
 
-    // Tearing down the Injector kills the service's effect too.
+    // Tearing down the Injector kills the service's effect too — one task later.
     unmount();
+    await tick();
     await act(async () => {
       serviceRef.count(3);
       await tick();
