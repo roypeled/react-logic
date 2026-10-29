@@ -71,10 +71,34 @@ const createLogicInstance = <T extends object>(
   let instance!: LogicInstance<T>;
   let injectedInstances: unknown[] = [];
   let disposeUserDestroys: () => void = () => undefined;
+  let disposeTracking: (() => void) | null = null;
 
-  // The effectScope wraps both the constructor and the tracking effect so any
-  // `effect()` the user creates in the constructor is captured and disposed
-  // together with everything else when the logic instance is torn down.
+  // Kept in a scope of its own, separate from the constructor's, so it can be
+  // restarted. StrictMode unmounts and remounts every effect; the unmount
+  // disposes this, and without a restart on remount a signal that resolves
+  // afterwards (a slow `fetchState`/`asyncState`) updates an instance nobody is
+  // listening to, so the component never re-renders. Idempotent: a call while
+  // tracking is already live does nothing.
+  const startTracking = () => {
+    if (disposeTracking) return;
+
+    disposeTracking = effectScope(() => {
+      effect(() => {
+        injectedInstances.forEach((i) => runSignalsInInstance(i));
+        runSignalsInInstance(instance);
+        // Run the effect handler in a separate tick to ensure all signals are updated, but not in the same effect cycle
+        setTimeout(() => effectHandler(instance));
+      });
+    });
+  };
+
+  const stopTracking = () => {
+    disposeTracking?.();
+    disposeTracking = null;
+  };
+
+  // The effectScope wraps the constructor so any `effect()` the user creates
+  // there is captured and disposed with the instance.
   const cleanupSignals = effectScope(() => {
     const adapter = getDIAdapter();
     const built = adapter.construct(scope, () => new logicClass() as LogicInstance<T>);
@@ -83,16 +107,11 @@ const createLogicInstance = <T extends object>(
     instance[INSTANCE_ID_SYMBOL] = instanceId;
     injectedInstances = built.injected;
     disposeUserDestroys = built.dispose;
-
-    effect(() => {
-      injectedInstances.forEach((i) => runSignalsInInstance(i));
-      runSignalsInInstance(instance);
-      // Run the effect handler in a separate tick to ensure all signals are updated, but not in the same effect cycle
-      setTimeout(() => effectHandler(instance));
-    });
   });
 
-  return { rootInstance: instance, cleanupSignals, disposeUserDestroys, instanceId };
+  startTracking();
+
+  return { rootInstance: instance, cleanupSignals, disposeUserDestroys, instanceId, startTracking, stopTracking };
 };
 
 /**
@@ -142,7 +161,7 @@ export const useLogic = <T extends object>(
   const mountedRef = useRef(false);
   const pendingRef = useRef<LogicInstance<T> | null>(null);
 
-  const { rootInstance, cleanupSignals, disposeUserDestroys, instanceId } = useMemo(() => {
+  const { rootInstance, cleanupSignals, disposeUserDestroys, instanceId, startTracking, stopTracking } = useMemo(() => {
     return createLogicInstance(logicClass, scope, (i) => {
       if (mountedRef.current) {
         setStateInstance({ i });
@@ -154,6 +173,9 @@ export const useLogic = <T extends object>(
 
   useEffect(() => {
     mountedRef.current = true;
+    // A remount — StrictMode's, or any key change that keeps the memo — finds
+    // tracking stopped by the previous cleanup, so bring it back.
+    startTracking();
     if (pendingRef.current) {
       setStateInstance({ i: pendingRef.current });
       pendingRef.current = null;
@@ -161,13 +183,23 @@ export const useLogic = <T extends object>(
     return () => {
       mountedRef.current = false;
       console.debug(`Cleaning up logic instance for ${logicClass.name}@${instanceId}`);
+      stopTracking();
       cleanupSignals();
       disposeUserDestroys();
       if (cleanup) {
         cleanup(rootInstance);
       }
     };
-  }, [cleanup, cleanupSignals, disposeUserDestroys, rootInstance, instanceId, logicClass]);
+  }, [
+    cleanup,
+    cleanupSignals,
+    disposeUserDestroys,
+    rootInstance,
+    instanceId,
+    logicClass,
+    startTracking,
+    stopTracking,
+  ]);
 
   return stateInstance?.i ?? rootInstance;
 };
